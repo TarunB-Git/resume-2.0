@@ -1871,20 +1871,7 @@ body.dark-mode {
 .mode-tabs {
   padding: 2px;
 }
-.document-toolbar {
-  min-height: 40px;
-  padding: 5px 8px;
-  display: flex;
-  gap: 5px;
-  align-items: center;
-  flex-shrink: 0;
-  overflow-x: auto;
-  border-bottom: 1px solid var(--line);
-}
-.document-toolbar .button {
-  padding: 6px;
-  font-size: 10px;
-}
+
 .page-navigator {
   border: 0;
   padding: 0;
@@ -2841,19 +2828,7 @@ body {
   overflow: auto;
   tab-size: 2;
 }
-.document-toolbar {
-  min-height: 46px;
-  overflow: visible;
-  gap: 6px;
-  flex-wrap: wrap;
-  padding: 5px 12px;
-  background: var(--ui-surface);
-}
-.document-toolbar .button {
-  font-size: 11px;
-  min-height: 30px;
-  padding: 5px 9px;
-}
+
 .page-navigator {
   gap: 2px;
 }
@@ -3625,13 +3600,6 @@ input[type="radio"] {
   accent-color: var(--ui-primary);
 }
 @media (max-width: 600px) {
-  .document-toolbar {
-    gap: 3px;
-  }
-  .document-toolbar .button {
-    padding: 5px 6px;
-    font-size: 10px;
-  }
   .input-tab {
     padding: 7px 6px;
   }

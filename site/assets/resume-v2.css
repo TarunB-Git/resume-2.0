@@ -3,7 +3,7 @@
   grid-template-rows: auto minmax(0, 1fr);
 }
 .workspace-content {
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
 }
 .topbar {
   min-height: 60px;
@@ -13,12 +13,11 @@
   font-size: 22px;
   gap: 5px;
   letter-spacing: -0.7px;
+  color: var(--ink);
 }
-.brand-resume {
-  color: #1967d2;
-}
-.dark-mode .brand-resume {
-  color: #8ab4f8;
+.brand-resume,
+.brand-studio {
+  color: inherit;
 }
 .brand-wrap,
 .top-actions,
@@ -113,7 +112,6 @@ a.button {
   stroke: none;
 }
 .more-actions,
-.mobile-project-links,
 .mobile-workspace-bar {
   display: none;
 }
@@ -126,31 +124,27 @@ a.button {
 }
 .output-controls {
   container-type: inline-size;
+  flex: 0 0 auto;
   min-width: 0;
+  width: 100%;
 }
 .document-topbar {
   box-sizing: border-box;
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
-  min-height: 42px;
+  gap: 6px 10px;
+  min-height: 44px;
   height: auto;
-  padding: 8px;
+  padding: 6px 8px;
   margin: 0;
-  border: 1px solid var(--line);
-  border-radius: 9px 9px 0 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
   background: var(--ui-surface);
 }
 .document-primary-controls {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  min-width: 0;
-}
-.document-primary-controls > * {
-  flex: 0 0 auto;
+  display: contents;
 }
 .document-topbar .button,
 .document-topbar summary {
@@ -160,28 +154,111 @@ a.button {
 }
 .document-topbar .workspace-layout {
   display: flex;
-  width: fit-content;
+  flex-wrap: wrap;
+  width: auto;
+  min-width: 0;
   max-width: 100%;
   gap: 2px;
-  margin: 0;
+  margin: 0 0 0 auto;
 }
 .document-topbar .layout-choice {
-  white-space: nowrap;
-  padding: 5px 9px;
+  min-width: 0;
+  white-space: normal;
+  padding: 5px 7px;
 }
-@container (min-width: 650px) {
-  .document-topbar {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-  .document-primary-controls {
-    flex-wrap: nowrap;
-  }
-}
-.workspace-topline.source-only > .resume-tabs {
-  grid-column: 1 !important;
-}
-.workspace-topline.source-only > .output-controls {
+.layout-short-label {
   display: none;
+}
+@container (max-width: 450px) {
+  .layout-full-label {
+    display: none;
+  }
+  .layout-short-label {
+    display: inline;
+  }
+  .document-topbar #inspectPdfButton .action-label {
+    display: none;
+  }
+  .document-topbar {
+    gap: 6px;
+  }
+}
+.editor-pane > .resume-tabs {
+  flex: 0 0 38px;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  padding: 0 4px;
+  border-bottom: 1px solid var(--line);
+}
+.pane-head-actions {
+  min-width: 0;
+}
+.input-tabs {
+  min-width: 0;
+  overflow-x: auto;
+}
+@container (max-width: 400px) {
+  .pane-title {
+    display: none;
+  }
+  .pane-head-actions {
+    width: 100%;
+    margin: 0;
+  }
+}
+.document-toolbar {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  min-height: 40px;
+  padding: 4px 8px;
+  overflow: auto;
+  scrollbar-width: thin;
+  border-bottom: 1px solid var(--line);
+  background: var(--ui-surface);
+}
+.document-toolbar .button {
+  min-height: 29px;
+  padding: 4px 6px;
+  font-size: 10px;
+}
+.document-toolbar .icon-button {
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  padding: 4px;
+}
+.document-toolbar .material-symbols-rounded {
+  font-size: 18px;
+}
+.document-edit-actions,
+.document-view-actions,
+.document-toolbar .page-navigator {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  margin: 0;
+}
+.document-view-actions {
+  margin-left: auto;
+}
+.document-toolbar #documentStats {
+  flex: 0 0 auto;
+  margin: 0;
+  font-size: 10px;
+  color: var(--ui-muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+@container (max-width: 640px) {
+  .document-toolbar #documentStats {
+    display: none;
+  }
 }
 #xmlEditor {
   box-sizing: border-box;
@@ -301,7 +378,14 @@ a.button {
     gap: 0;
   }
   .desktop-project-links {
-    display: none;
+    display: flex;
+    gap: 0;
+  }
+  .desktop-project-links .icon-button {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    padding: 10px;
   }
   .top-actions {
     gap: 3px;
@@ -361,10 +445,7 @@ a.button {
     align-items: center;
     justify-content: center;
   }
-  .secondary-actions .project-links {
-    display: flex;
-    order: 5;
-  }
+
   .compile-actions .compile-guide {
     display: block;
   }
@@ -411,7 +492,7 @@ a.button {
     grid-row: 1;
     width: 100%;
     display: grid;
-    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
     overflow: hidden;
     gap: 0;
   }
@@ -439,25 +520,11 @@ a.button {
     min-width: 0;
     padding: 7px 10px;
   }
-  .workspace-topline {
-    grid-template-columns: minmax(0, 1fr) !important;
-  }
-  .workspace-topline > .resume-tabs {
-    grid-column: 1 !important;
-    margin: 0;
-    padding: 0;
-  }
-  .output-controls {
-    grid-column: 1 !important;
-    grid-row: 1 !important;
-  }
   .document-topbar {
     padding: 8px;
     gap: 8px;
   }
-  .document-primary-controls {
-    gap: 6px;
-  }
+
   .document-primary-controls .mode-tab,
   .document-primary-controls .button,
   .document-primary-controls summary,
@@ -469,7 +536,7 @@ a.button {
     display: none;
   }
   #inspectPdfButton {
-    margin-left: auto;
+    margin-left: 0;
   }
   .workspace-panels,
   .workspace-panels.document-only {
@@ -520,32 +587,46 @@ a.button {
     padding: 4px;
   }
   .document-toolbar {
-    min-height: 48px;
-    padding: 4px 8px;
-    gap: 6px;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .document-edit-actions {
-    display: flex;
+    min-height: 52px;
+    padding: 4px;
     gap: 4px;
   }
   .document-edit-actions > .button {
     display: none;
   }
-  .document-toolbar .button,
-  .insert-menu summary,
-  .document-toolbar select {
+  .insert-label {
+    display: none;
+  }
+  .insert-menu > .button {
+    box-sizing: border-box;
+    width: 44px;
+    min-width: 44px;
     min-height: 44px;
+    padding: 10px;
+  }
+  .document-toolbar .page-navigator {
+    gap: 0;
+  }
+  .document-toolbar .page-navigator button {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    padding: 8px;
+  }
+  .document-toolbar .page-number {
+    width: 40px;
+    min-height: 44px;
+  }
+  .document-toolbar .page-total {
+    min-width: 22px;
+  }
+  .document-toolbar .zoom-select {
+    min-height: 44px;
+    width: 78px;
+    padding: 4px;
   }
   .document-toolbar #documentStats {
     display: none;
-  }
-  .page-navigator {
-    margin: 0;
-    gap: 4px;
   }
   .preview-body {
     min-height: 0;
@@ -654,9 +735,7 @@ a.button {
     width: 20px;
     min-width: 20px;
   }
-  .document-primary-controls {
-    gap: 4px;
-  }
+
   #inspectPdfButton {
     font-size: 10px;
     padding: 4px 6px;
@@ -666,12 +745,7 @@ a.button {
     padding: 6px;
     font-size: 10px;
   }
-  .document-toolbar {
-    justify-content: center;
-  }
-  .document-toolbar .page-navigator {
-    margin: 0;
-  }
+
   .walkthrough-forms {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -802,10 +876,35 @@ a.button {
   .top-actions {
     grid-column: 1/-1;
     grid-row: 2;
+    box-sizing: border-box;
     width: 100%;
-    justify-content: space-between;
-    gap: 6px;
+    justify-content: center;
+    gap: 12px;
   }
+  .compile-actions {
+    gap: 12px;
+  }
+  .topbar .brand {
+    font-size: 18px;
+  }
+  .brand-wrap {
+    gap: 8px;
+  }
+  .mobile-workspace-bar {
+    gap: 4px;
+    padding: 0 0 4px;
+  }
+  .mobile-workspace-bar .segmented {
+    flex: 0 1 auto;
+    margin: 0 auto;
+  }
+  .mobile-workspace-bar .layout-choice {
+    padding: 7px 8px;
+  }
+  .mobile-workspace-bar > .button {
+    flex: 0 0 44px;
+  }
+
   .top-actions #moreActionsButton {
     position: absolute;
     top: 6px;
@@ -861,4 +960,39 @@ a.button {
     min-height: 44px;
     min-width: 44px;
   }
+}
+
+/* The scroll surface follows display scale without changing document layout. */
+.document-zoom-surface {
+  overflow: clip;
+  position: relative;
+  margin: 0 auto;
+  flex: 0 0 auto;
+}
+.document-zoom-surface > .preview-pages,
+.document-zoom-surface > .pdf-proof-stack {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+  transform-origin: 0 0;
+}
+
+.editor-pane {
+  container-type: inline-size;
+}
+.insert-options[popover] {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  width: 170px;
+  max-width: calc(100vw - 16px);
+  padding: 6px;
+  color: var(--ink);
+}
+.insert-options[popover]:not(:popover-open) {
+  display: none;
+}
+.insert-options[popover]:popover-open {
+  display: flex;
 }

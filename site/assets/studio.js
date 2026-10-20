@@ -240,12 +240,12 @@ let activeMode = workspace.outputMode === "word" ? "word" : "pdf";
 let latestJsonError = null;
 let compileCount = Number(safeStorageGet("forma.compile.count") || 0);
 let interfaceAppearance =
-  safeStorageGet("forma.interface.appearance") === "apple" ? "apple" : "material";
+  safeStorageGet("forma.interface.appearance") === "material" ? "material" : "apple";
 let darkMode = safeStorageGet("forma.dark.mode") === "true";
 let appearanceStage =
   safeStorageGet("forma.appearance.stage") ||
   (darkMode ? "dark" : interfaceAppearance === "apple" ? "apple" : "light");
-if (!["light", "apple", "dark"].includes(appearanceStage)) appearanceStage = "light";
+if (!["apple", "light", "dark"].includes(appearanceStage)) appearanceStage = "apple";
 interfaceAppearance = appearanceStage === "light" ? "material" : "apple";
 darkMode = appearanceStage === "dark";
 let compiledArtifacts = null;
@@ -455,7 +455,7 @@ function syncControls() {
     : "#496f91";
   $("#bulletSelect").value = resume.format?.bullet || "disc";
   document.documentElement.style.setProperty("--accent", resume.format?.accent || "#496f91");
-  const stages = ["light", "apple", "dark"];
+  const stages = ["apple", "light", "dark"];
   const stageLabels = { light: "Material light", apple: "Apple light", dark: "Dark" };
   const nextStage = stages[(stages.indexOf(appearanceStage) + 1) % stages.length];
   $("#appearanceCycle").innerHTML =
@@ -722,21 +722,7 @@ function setPanelGrid() {
     if (index < visible.length - 1) tracks.push("8px");
   });
   const vertical = panelResizeVertical();
-  const compact = isCompactLayout();
-  const line = $("#workspaceTopline");
-  line.classList.toggle("source-only", compact && mobilePane === "source");
   document.body.dataset.mobilePane = mobilePane;
-  line.classList.toggle(
-    "document-only",
-    compact ? mobilePane === "document" : workspaceLayout === "document",
-  );
-  line.classList.toggle("stacked", vertical);
-  line.style.gridTemplateColumns =
-    compact || vertical || workspaceLayout === "document" ? "minmax(0,1fr)" : tracks.join(" ");
-  $("#resumeTabs").style.gridColumn = sourceFirst ? "1" : "3";
-  $("#outputControls").style.gridColumn =
-    compact || workspaceLayout === "document" || vertical ? "1" : sourceFirst ? "3" : "1";
-  if (vertical) $("#resumeTabs").style.gridColumn = "1";
   $("#workspacePanels").style.gridTemplateColumns = vertical ? "minmax(0,1fr)" : tracks.join(" ");
   $("#workspacePanels").style.gridTemplateRows = vertical ? tracks.join(" ") : "minmax(0,1fr)";
   $$(".pane-resizer[data-left-panel]", $("#workspacePanels")).forEach((divider) => {
@@ -747,6 +733,7 @@ function setPanelGrid() {
 }
 function renderPanelOrder() {
   const container = $("#workspacePanels");
+  paneNodes[activeInput].prepend($("#resumeTabs"));
   container.replaceChildren();
   container.classList.toggle(
     "document-only",
@@ -901,8 +888,7 @@ function fitPreview() {
             Math.min((host.clientWidth - 24) / PAGE.width, (host.clientHeight - 40) / PAGE.height),
           )
         : Math.max(0.25, Math.min(3, Number(previewZoom) || 1));
-  const stableZoom = String(Math.floor(zoom * 10000) / 10000);
-  if (pages.style.zoom !== stableZoom) pages.style.zoom = stableZoom;
+  applyDocumentScale(pages, Math.floor(zoom * 10000) / 10000, PAGE.width);
   $("#documentStats").textContent =
     activeMode === "word"
       ? `Word · ${Math.round(zoom * 100)}%`
@@ -2987,7 +2973,8 @@ async function inspectPdf() {
     pageNumber = 1;
   const resize = () => {
     const value = $("#proofZoom")?.value;
-    stack.style.zoom = String(
+    applyDocumentScale(
+      stack,
       value === "fit"
         ? Math.min(1, Math.max(0.25, (host.clientWidth - 32) / PAGE.width))
         : value === "page"
@@ -3000,16 +2987,13 @@ async function inspectPdf() {
               ),
             )
           : Number(value) || 1,
+      PAGE.width,
     );
   };
   attachPinchZoom(
     host,
-    () => Number(stack.style.zoom) || 1,
+    () => documentScale(stack),
     (scale, anchor) => {
-      const before = stack.getBoundingClientRect(),
-        old = Number(stack.style.zoom) || 1;
-      const x = (anchor.x - before.left) / old,
-        y = (anchor.y - before.top) / old;
       let option = $("#proofZoom").querySelector("[data-custom-zoom]");
       if (!option) {
         option = document.createElement("option");
@@ -3019,10 +3003,7 @@ async function inspectPdf() {
       option.value = String(scale);
       option.textContent = Math.round(scale * 100) + "%";
       $("#proofZoom").value = String(scale);
-      resize();
-      const after = stack.getBoundingClientRect();
-      host.scrollLeft += after.left + x * scale - anchor.x;
-      host.scrollTop += after.top + y * scale - anchor.y;
+      anchorDocumentScale(host, stack, scale, anchor, resize);
     },
   );
   const resizeObserver = new ResizeObserver(resize);
@@ -4735,7 +4716,7 @@ $("#documentViewButton").onclick = () => {
   renderPanelOrder();
 };
 $("#appearanceCycle").onclick = () => {
-  const stages = ["light", "apple", "dark"];
+  const stages = ["apple", "light", "dark"];
   appearanceStage = stages[(stages.indexOf(appearanceStage) + 1) % stages.length];
   interfaceAppearance = appearanceStage === "light" ? "material" : "apple";
   darkMode = appearanceStage === "dark";
@@ -5275,7 +5256,7 @@ $("#swapPanesButton").onclick = () => {
   renderPanelOrder();
 };
 document.addEventListener("click", (event) => {
-  $$(".document-edit-menu[open],.insert-menu[open],.compile-guide[open]").forEach((menu) => {
+  $$(".document-edit-menu[open],.compile-guide[open]").forEach((menu) => {
     if (!menu.contains(event.target) || event.target.closest(".insert-options button"))
       menu.open = false;
   });
@@ -5303,9 +5284,7 @@ window.addEventListener("keydown", (event) => {
       $("#modalRoot").replaceChildren();
       event.preventDefault();
     }
-    $$(".document-edit-menu[open],.insert-menu[open],.compile-guide[open]").forEach(
-      (menu) => (menu.open = false),
-    );
+    $$(".document-edit-menu[open],.compile-guide[open]").forEach((menu) => (menu.open = false));
     $("#exportMenu").classList.add("hidden");
     $("#exportMenuToggle").setAttribute("aria-expanded", "false");
   }

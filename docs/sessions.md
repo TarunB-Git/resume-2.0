@@ -13,4 +13,4 @@ Use **Import** and choose the ZIP (up to 100 MB; individual document imports are
 
 A backup contains the information entered into the editor, including drafts and checkpoint history. Store and share it accordingly. A bug report never includes this archive automatically.
 
-Browser storage does not move between `file://`, localhost and `https://resume.tarunb.me`. Export before changing origins. Import into the destination, inspect the restored files, and retain your backup until you have confirmed it.
+Browser storage is isolated by origin. A session ZIP transfers the workspace between local files, local servers and hosted versions. The original backup remains independent of the restored copy.

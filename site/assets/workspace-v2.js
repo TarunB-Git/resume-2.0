@@ -202,23 +202,45 @@ function showSessionImport(incoming, templates, filename, settings) {
     }
   };
 }
+function documentScale(stack) {
+  return Number(stack?.dataset.displayScale) || 1;
+}
+function applyDocumentScale(stack, value, width) {
+  const scale = Math.max(0.25, Math.min(3, value));
+  let surface = stack.parentElement;
+  if (!surface.classList.contains("document-zoom-surface")) {
+    surface = document.createElement("div");
+    surface.className = "document-zoom-surface";
+    stack.before(surface);
+    surface.append(stack);
+  }
+  stack.dataset.displayScale = String(scale);
+  stack.style.transform = `scale(${scale})`;
+  surface.style.width = `${width * scale}px`;
+  surface.style.height = `${stack.offsetHeight * scale}px`;
+}
+function anchorDocumentScale(host, stack, scale, anchor, apply) {
+  const before = stack.getBoundingClientRect(),
+    old = documentScale(stack);
+  const point = anchor || {
+    x: host.getBoundingClientRect().left + host.clientWidth / 2,
+    y: host.getBoundingClientRect().top + host.clientHeight / 2,
+  };
+  const content = { x: (point.x - before.left) / old, y: (point.y - before.top) / old };
+  apply(scale);
+  const after = stack.getBoundingClientRect();
+  host.scrollLeft += after.left + content.x * scale - point.x;
+  host.scrollTop += after.top + content.y * scale - point.y;
+}
 function setDocumentZoom(value, anchor) {
   const host = $("#previewBody"),
     stack = $("#previewPages");
   if (!stack) return;
-  const before = stack.getBoundingClientRect(),
-    point = anchor || {
-      x: host.getBoundingClientRect().left + host.clientWidth / 2,
-      y: host.getBoundingClientRect().top + host.clientHeight / 2,
-    };
-  const old = Number(stack.style.zoom) || 1,
-    newZoom = Math.max(0.25, Math.min(3, value));
-  const content = { x: (point.x - before.left) / old, y: (point.y - before.top) / old };
-  previewZoom = String(newZoom);
-  fitPreview();
-  const after = stack.getBoundingClientRect();
-  host.scrollLeft += after.left + content.x * newZoom - point.x;
-  host.scrollTop += after.top + content.y * newZoom - point.y;
+  const newZoom = Math.max(0.25, Math.min(3, value));
+  anchorDocumentScale(host, stack, newZoom, anchor, () => {
+    previewZoom = String(newZoom);
+    fitPreview();
+  });
   safeStorageSet("forma.preview.zoom.v4", previewZoom);
   syncZoomControl();
 }
@@ -241,6 +263,8 @@ function attachPinchZoom(host, getScale, setScale) {
   let touchGesture = null,
     webkitGesture = null,
     lastPoint = null;
+  const pointers = new Map();
+  let pointerGesture = null;
   const clamp = (value) => Math.max(0.25, Math.min(3, value));
   const options = { passive: false, capture: true };
   const consume = (event) => {
@@ -260,10 +284,48 @@ function attachPinchZoom(host, getScale, setScale) {
     return { x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2 };
   };
   host.addEventListener(
+    "pointerdown",
+    (event) => {
+      if (event.pointerType !== "touch") return;
+      pointers.set(event.pointerId, event);
+      if (pointers.size !== 2 || touchGesture || webkitGesture) return;
+      const touches = [...pointers.values()];
+      pointerGesture = { distance: distance(touches), scale: getScale() };
+      consume(event);
+    },
+    options,
+  );
+  host.addEventListener(
+    "pointermove",
+    (event) => {
+      if (!pointers.has(event.pointerId)) return;
+      pointers.set(event.pointerId, event);
+      if (!pointerGesture || pointers.size !== 2 || touchGesture || webkitGesture) return;
+      consume(event);
+      const touches = [...pointers.values()];
+      lastPoint = point(touches);
+      setScale(
+        clamp((pointerGesture.scale * distance(touches)) / Math.max(1, pointerGesture.distance)),
+        lastPoint,
+      );
+    },
+    options,
+  );
+  for (const name of ["pointerup", "pointercancel", "lostpointercapture"])
+    host.addEventListener(
+      name,
+      (event) => {
+        pointers.delete(event.pointerId);
+        pointerGesture = null;
+      },
+      options,
+    );
+  host.addEventListener(
     "touchstart",
     (event) => {
       if (event.touches.length !== 2) return;
       consume(event);
+      pointerGesture = null;
       lastPoint = point(event.touches);
       touchGesture = { distance: distance(event.touches), scale: getScale() };
     },
@@ -362,12 +424,24 @@ function initializeWorkspaceV2() {
   window.addEventListener("resize", syncViewportHeight);
   window.visualViewport?.addEventListener("resize", syncViewportHeight);
   syncZoomControl();
+  // Word paragraphs can grow without replacing the page stack.
+  $("#previewBody").addEventListener("input", () => requestAnimationFrame(fitPreview));
   $("#xmlEditor").addEventListener("input", parseXmlLive);
   $("#previewBody").addEventListener("beforeinput", (event) => {
     if (sourceDraftError()) {
       event.preventDefault();
       toast("Correct the source draft before editing the document.");
     }
+  });
+  const insertPopover = $("#insertOptions");
+  insertPopover.addEventListener("beforetoggle", (event) => {
+    if (event.newState !== "open") return;
+    const bounds = $("#insertButton").getBoundingClientRect();
+    insertPopover.style.left = Math.max(8, Math.min(bounds.left, window.innerWidth - 186)) + "px";
+    insertPopover.style.top = Math.min(bounds.bottom + 6, window.innerHeight - 120) + "px";
+  });
+  insertPopover.addEventListener("click", (event) => {
+    if (event.target.closest("button")) insertPopover.hidePopover();
   });
   $("#headerImportButton").onclick = () => $("#importResumeButton").click();
   $("#mobileFilesButton").onclick = () => togglePanel("files");
@@ -398,11 +472,7 @@ function initializeWorkspaceV2() {
     renderPanelOrder();
     syncFilesPanel();
   });
-  attachPinchZoom(
-    $("#previewBody"),
-    () => Number($("#previewPages")?.style.zoom) || 1,
-    setDocumentZoom,
-  );
+  attachPinchZoom($("#previewBody"), () => documentScale($("#previewPages")), setDocumentZoom);
   sourceState.pendingDrafts =
     workspace.resumes.find((item) => item.id === activeResumeId)?.sourceDrafts || null;
   syncV2Source();

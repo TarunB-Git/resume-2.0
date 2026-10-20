@@ -177,3 +177,115 @@ test("Header order, restored subtext and removal of the 900px mobile minimum are
   assert.match(css, /#headerImportButton \.action-label/);
   assert.match(css, /#exportButton \.action-label/);
 });
+test("Theme starts at Apple, then cycles through Material light and Dark without replacing saved choices", () => {
+  const run = (saved) => {
+    const c = { safeStorageGet: (key) => saved[key] ?? null };
+    vm.createContext(c);
+    vm.runInContext(between(studio, "let interfaceAppearance =", "let compiledArtifacts"), c);
+    return vm.runInContext("({ appearanceStage, interfaceAppearance, darkMode })", c);
+  };
+  assert.equal(run({}).appearanceStage, "apple");
+  assert.equal(run({ "forma.appearance.stage": "light" }).appearanceStage, "light");
+  assert.equal(run({ "forma.dark.mode": "true" }).appearanceStage, "dark");
+  const c = {
+    $: () => ({}),
+    safeStorageSet() {},
+    syncControls() {},
+  };
+  vm.createContext(c);
+  vm.runInContext('let appearanceStage="apple",interfaceAppearance="apple",darkMode=false;', c);
+  const click = between(
+    studio,
+    '$("#appearanceCycle").onclick = () => {',
+    '$("#inspectPdfButton").onclick',
+  );
+  // Keep the installed callback available in this isolated control context.
+  c.$ = () => c.button;
+  c.button = {};
+  vm.runInContext(click, c);
+  for (const expected of ["light", "dark", "apple"]) {
+    c.button.onclick();
+    assert.equal(vm.runInContext("appearanceStage", c), expected);
+  }
+});
+test("Pointer-only touch devices can pinch both ways without consuming a single touch", () => {
+  const handlers = {};
+  let scale = 1,
+    prevented = 0;
+  const host = { addEventListener: (name, fn) => (handlers[name] = fn) };
+  const c = {};
+  vm.createContext(c);
+  vm.runInContext(between(v2, "function attachPinchZoom(", "function syncViewportHeight("), c);
+  c.attachPinchZoom(
+    host,
+    () => scale,
+    (value) => (scale = value),
+  );
+  const event = (id, x) => ({
+    pointerType: "touch",
+    pointerId: id,
+    clientX: x,
+    clientY: 50,
+    preventDefault() {
+      prevented++;
+    },
+  });
+  handlers.pointerdown(event(1, 0));
+  handlers.pointermove(event(1, 20));
+  assert.equal(prevented, 0);
+  handlers.pointerdown(event(2, 120));
+  handlers.pointermove(event(2, 220));
+  assert.equal(scale, 2);
+  handlers.pointermove(event(2, 70));
+  assert.equal(scale, 0.5);
+  handlers.pointercancel(event(2, 70));
+  handlers.pointermove(event(1, 30));
+  assert.equal(scale, 0.5);
+});
+test("Zoom scales the scroll surface, keeps paper layout fixed and updates Word content height", () => {
+  const host = { classList: { contains: () => false } };
+  const surface = {
+    classList: { contains: () => true },
+    style: {},
+    append(node) {
+      node.parentElement = this;
+    },
+  };
+  const stack = {
+    parentElement: host,
+    dataset: {},
+    style: {},
+    offsetHeight: 1200,
+    before(node) {
+      assert.equal(node, surface);
+    },
+  };
+  const c = { document: { createElement: () => surface } };
+  vm.createContext(c);
+  vm.runInContext(between(v2, "function documentScale(", "function anchorDocumentScale("), c);
+  c.applyDocumentScale(stack, 0.5, 800);
+  assert.equal(stack.style.transform, "scale(0.5)");
+  assert.equal(surface.style.width, "400px");
+  assert.equal(surface.style.height, "600px");
+  assert.equal(c.documentScale(stack), 0.5);
+  stack.offsetHeight = 1800;
+  c.applyDocumentScale(stack, 2, 800);
+  assert.equal(surface.style.width, "1600px");
+  assert.equal(surface.style.height, "3600px");
+  assert.equal(stack.style.width, undefined);
+  assert.equal(stack.style.zoom, undefined);
+});
+test("Each pane owns its header and Word retains zoom outside PDF page navigation", () => {
+  const html = source("site/index.html");
+  assert.ok(!html.includes("workspaceTopline"));
+  assert.ok(html.indexOf('id="panelJson"') < html.indexOf('id="resumeTabs"'));
+  assert.ok(html.indexOf('id="panelOutput"') < html.indexOf('id="outputControls"'));
+  assert.match(studio, /paneNodes\[activeInput\]\.prepend\(\$\("#resumeTabs"\)\)/);
+  assert.match(html, /class="document-view-actions"/);
+  assert.match(html, /popovertarget="insertOptions"/);
+  assert.match(html, /id="insertOptions"[^>]*popover="auto"/);
+  const css = source("site/assets/resume-v2.css");
+  assert.match(css, /\.document-primary-controls\s*\{\s*display: contents/);
+  assert.match(css, /\.insert-label\s*\{\s*display: none/);
+  assert.ok(!html.includes("mobile-project-links"));
+});

@@ -98,12 +98,65 @@ async function checkViewport(browser, width) {
   assert.ok(await page.evaluate(() => resume.layout?.richDocument?.includes("An editable line.")));
   const previousZoom = await page
     .locator("#previewPages")
-    .evaluate((node) => Number(node.style.zoom));
+    .evaluate((node) => Number(node.dataset.displayScale));
+  const paperBefore = await page
+    .locator(".preview-pages .resume-paper")
+    .first()
+    .evaluate((node) => ({ width: node.offsetWidth, height: node.offsetHeight }));
   await page
     .locator("#previewBody")
     .dispatchEvent("wheel", { ctrlKey: true, deltaY: -40, clientX: width / 2, clientY: 400 });
-  const nextZoom = await page.locator("#previewPages").evaluate((node) => Number(node.style.zoom));
+  const nextZoom = await page
+    .locator("#previewPages")
+    .evaluate((node) => Number(node.dataset.displayScale));
   assert.ok(nextZoom > previousZoom && nextZoom <= 3);
+  await page
+    .locator("#previewBody")
+    .dispatchEvent("wheel", { ctrlKey: true, deltaY: 80, clientX: width / 2, clientY: 400 });
+  const smallerZoom = await page
+    .locator("#previewPages")
+    .evaluate((node) => Number(node.dataset.displayScale));
+  assert.ok(smallerZoom < nextZoom && smallerZoom >= 0.25);
+  assert.deepEqual(
+    await page
+      .locator(".preview-pages .resume-paper")
+      .first()
+      .evaluate((node) => ({ width: node.offsetWidth, height: node.offsetHeight })),
+    paperBefore,
+  );
+  await page.locator('[data-mode="word"]').click();
+  assert.ok(await page.locator("#previewZoom").isVisible());
+  await page.locator('[data-mode="pdf"]').click();
+  if (width <= 900) {
+    for (const link of [
+      ".desktop-project-links a[href='https://tarunb.me']",
+      ".desktop-project-links a[href*='github.com']",
+    ])
+      assert.ok(await page.locator(link).isVisible());
+    const insert = await page.locator("#insertButton").boundingBox(),
+      zoom = await page.locator("#previewZoom").boundingBox();
+    assert.ok(Math.abs(insert.y - zoom.y) < 8, "Insert and zoom stay on one toolbar line");
+    await page.click("#insertButton");
+    assert.ok(await page.locator("#insertOptions").isVisible());
+    await page.keyboard.press("Escape");
+  } else {
+    await page.evaluate(() => {
+      for (const source of ["json", "xml", "latex", "markdown"]) panelWeights[source] = 84;
+      panelWeights.output = 16;
+      setPanelGrid();
+    });
+    const bounds = await page.locator("#panelOutput").boundingBox();
+    const controls = await page.locator("#outputControls").boundingBox();
+    assert.ok(
+      controls.x >= bounds.x && controls.x + controls.width <= bounds.x + bounds.width,
+      "Output controls stay inside a narrow pane",
+    );
+    await page.evaluate(() => {
+      for (const source of ["json", "xml", "latex", "markdown"]) panelWeights[source] = 30;
+      panelWeights.output = 70;
+      setPanelGrid();
+    });
+  }
   await page.screenshot({
     path: path.join(artifacts, `workspace-${browser.browserType().name()}-${width}.png`),
     fullPage: true,

@@ -1,6 +1,6 @@
 # Résumé 2.0
 
-Edit résumé content and its document layout in one browser tab. Keep portable source, work directly on the document, and export a complete session when you want to move devices.
+A browser-local résumé editor with portable source, direct document editing and complete session backups.
 
 The app runs as a static site. Résumé content stays in the browser; there are no accounts, analytics or upload service.
 
@@ -19,13 +19,13 @@ Open `http://127.0.0.1:4173`. The build copies `site/` to `dist/`, which can be 
 
 ## Workflow
 
-1. Replace the fictional Tarun B content with your details, or use **Import** to open an existing file.
+1. Start from the fictional Tarun B sample or import an existing document.
 2. Edit JSON, XML, Markdown or the supported LaTeX fields. Switch to **Document** on a phone.
 3. Edit PDF preview fields directly, or choose **Word** to add paragraphs, remove lines and format text freely.
 4. Use **Compile** to save a local checkpoint and review changes. This does not invoke a TeX compiler or connect collaborators.
 5. Export a PDF or DOCX for applications. Export a session ZIP to back up every résumé, source draft, folder and template.
 
-Browser storage belongs to the current origin. Export a ZIP before moving from a local file or localhost to the hosted site, then import it there. Clearing site storage removes the local workspace.
+Browser storage belongs to the current origin. Session ZIP files transfer work between origins and devices. Clearing site storage removes the local workspace.
 
 ## Capabilities
 
@@ -84,7 +84,7 @@ npm run test:browser
 
 The comparison uses the downloadable files in `site/benchmark/`. To regenerate its PDF/DOCX fixtures, use `python3 site/benchmark/create-fixtures.py` with `reportlab` and `python-docx` installed, then run `npm run benchmark`. Fixture generation is optional; the static build uses the checked-in files.
 
-The browser suite covers 320, 390, 768, 997 and 1280px in Chromium and WebKit. It is separate from the fast data tests. Real iOS/Android gestures and visual PDF/DOCX review remain manual release checks. Screenshots and exported fixtures go to ignored `artifacts/`; only publish reviewed results.
+The browser suite covers 320, 390, 768, 997 and 1280px in Chromium and WebKit. It is separate from the fast data tests. Real iOS/Android gestures and visual PDF/DOCX review remain manual release checks. Screenshots and exported fixtures go to ignored `artifacts/`. Automated gesture tests establish event handling and scale geometry; they do not establish physical-device behavior.
 
 
 ## Contributing and license

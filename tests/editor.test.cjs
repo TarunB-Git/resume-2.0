@@ -354,7 +354,7 @@ test("Document zoom keeps the content point beneath the gesture and clamps displ
     getBoundingClientRect: () => ({ left: 0, top: 0 }),
   };
   const stack = {
-    style: { zoom: "1" },
+    dataset: { displayScale: "1" },
     getBoundingClientRect: () => ({ left: 20 - host.scrollLeft, top: 20 - host.scrollTop }),
   };
   const select = { value: "1" };
@@ -363,11 +363,11 @@ test("Document zoom keeps the content point beneath the gesture and clamps displ
     safeStorageSet() {},
     fitPreview() {
       scale = Number(c.previewZoom);
-      stack.style.zoom = String(scale);
+      stack.dataset.displayScale = String(scale);
     },
   };
   vm.createContext(c);
-  vm.runInContext(between(v2, "function setDocumentZoom(", "function attachPinchZoom("), c);
+  vm.runInContext(between(v2, "function documentScale(", "function attachPinchZoom("), c);
   c.setDocumentZoom(2, { x: 120, y: 220 });
   assert.equal(host.scrollLeft, 100);
   assert.equal(host.scrollTop, 200);

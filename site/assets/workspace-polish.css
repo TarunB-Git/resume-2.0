@@ -582,15 +582,7 @@ select {
   min-height: 32px;
   padding: 5px 9px;
 }
-.document-toolbar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  min-height: 44px;
-  padding: 6px 8px;
-  gap: 6px;
-  border-bottom: 1px solid var(--line);
-}
-.document-edit-actions,
+
 .document-insert-actions {
   display: flex;
   align-items: center;
@@ -600,11 +592,7 @@ select {
 .document-insert-actions {
   justify-content: flex-end;
 }
-.document-toolbar .button {
-  min-height: 29px;
-  padding: 4px 6px;
-  font-size: 10px;
-}
+
 .page-navigator {
   display: flex;
   justify-self: center;
@@ -757,12 +745,7 @@ select {
   padding: 4px 8px;
   min-height: 29px;
 }
-#documentStats {
-  margin-left: auto;
-  font-size: 10px;
-  white-space: nowrap;
-  color: var(--ui-muted);
-}
+
 .modal {
   border-radius: 12px;
 }
@@ -1317,9 +1300,7 @@ select {
     width: auto;
     height: 2px;
   }
-  .document-toolbar {
-    min-height: 44px;
-  }
+
   .walkthrough-forms {
     grid-template-columns: repeat(3, minmax(230px, 1fr));
     overflow-x: auto;
@@ -1408,17 +1389,12 @@ select {
     min-height: 23px;
     font-size: 10px;
   }
-  .document-toolbar {
-    grid-template-columns: 1fr auto;
-    row-gap: 3px;
-  }
+
   .page-navigator {
     grid-column: 1 / -1;
     grid-row: 1;
   }
-  .document-edit-actions {
-    grid-row: 2;
-  }
+
   .document-insert-actions {
     grid-row: 2;
   }
@@ -1431,9 +1407,7 @@ select {
     font-size: 10px;
     padding: 4px 5px;
   }
-  #documentStats {
-    font-size: 9px;
-  }
+
   .document-edit-popover {
     position: fixed;
     left: 42px;
@@ -1571,34 +1545,7 @@ select {
   padding: 4px 19px 4px 7px;
   background-position: right 5px center;
 }
-.document-toolbar {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  min-height: 40px;
-  padding: 5px 8px;
-  gap: 10px;
-  align-items: center;
-  flex-shrink: 0;
-}
-.document-edit-actions {
-  gap: 4px;
-  grid-row: auto;
-}
-.document-toolbar .icon-button {
-  width: 28px;
-  min-width: 28px;
-  height: 28px;
-  padding: 4px;
-}
-.document-toolbar .material-symbols-rounded {
-  font-size: 18px;
-}
-.document-toolbar .page-navigator {
-  grid-column: auto;
-  grid-row: auto;
-  gap: 6px;
-  justify-self: center;
-}
+
 .page-navigator button {
   width: 26px;
 }
@@ -1607,10 +1554,7 @@ select {
   text-align: left;
   font-variant-numeric: tabular-nums;
 }
-#documentStats {
-  margin-left: 0;
-  font-variant-numeric: tabular-nums;
-}
+
 .preview-body,
 .pdf-proof-pages {
   overflow-y: scroll;
@@ -1684,25 +1628,7 @@ select {
   font-variant-numeric: tabular-nums;
   min-width: 100px;
 }
-@container (max-width: 640px) {
-  .document-toolbar #documentStats {
-    display: none;
-  }
-  .document-toolbar {
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 6px;
-  }
-}
-@container (max-width: 420px) {
-  .document-toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  .document-toolbar .page-navigator {
-    margin-left: auto;
-  }
-}
+
 @media (max-width: 650px) {
   .brand-wrap {
     gap: 7px;
@@ -1738,31 +1664,7 @@ select {
   }
 }
 
-.document-toolbar {
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-}
-#documentStats {
-  justify-self: end;
-}
-@container (max-width: 640px) {
-  .document-toolbar {
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  }
-}
-@container (max-width: 480px) {
-  .document-toolbar {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 4px;
-  }
-  .document-edit-actions {
-    justify-content: center;
-  }
-  .document-toolbar .page-navigator {
-    margin: 0;
-  }
-}
-/* Source-width tabs and document controls share a single workspace row. */
+/* Workspace panel sizing and compressed document tabs. */
 .workspace-sidebar {
   grid-column: 1;
   grid-row: 1;
@@ -1776,13 +1678,7 @@ select {
   grid-row: 1;
   grid-template-rows: auto minmax(0, 1fr);
 }
-.workspace-topline {
-  display: grid;
-  align-items: start;
-  min-width: 0;
-  gap: 0;
-}
-.workspace-topline > .resume-tabs {
+.resume-tabs {
   grid-row: 1;
   width: 100%;
   min-width: 0;
@@ -1792,15 +1688,6 @@ select {
   grid-row: 1;
   min-width: 0;
   container-type: inline-size;
-}
-.workspace-topline.document-only > .resume-tabs {
-  display: none;
-}
-.workspace-topline.stacked .output-controls {
-  grid-row: 2;
-}
-.workspace-topline.stacked.document-only .output-controls {
-  grid-row: 1;
 }
 .resume-tabs {
   display: flex;
@@ -2228,8 +2115,7 @@ body[data-appearance="apple"].dark-mode .layout-choice.active {
   background: transparent;
   border: 0;
 }
-@media (max-width: 900px) {
-}
+
 @media (max-width: 650px) {
   #editTemplateButton {
     margin-right: 0;

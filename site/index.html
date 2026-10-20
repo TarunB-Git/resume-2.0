@@ -51,10 +51,10 @@
         <div class="top-actions">
           <div class="secondary-actions" id="secondaryActions">
             <button
-              aria-label="Appearance: Material light. Switch to Apple light"
+              aria-label="Appearance: Apple light. Switch to Material light"
               class="button quiet icon-button"
               id="appearanceCycle"
-              title="Material light → Apple light"
+              title="Apple light → Material light"
             >
               <span aria-hidden="true" class="material-symbols-rounded">light_mode</span></button
             ><button
@@ -64,33 +64,6 @@
             >
               Templates</button
             ><button class="button quiet" id="whyJsonButton">Why JSON?</button>
-
-            <div class="project-links mobile-project-links">
-              <a
-                aria-label="Tarun’s website"
-                class="button quiet icon-button"
-                href="https://tarunb.me"
-                rel="noopener"
-                target="_blank"
-                title="tarunb.me"
-                ><svg aria-hidden="true" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="9"></circle>
-                  <ellipse cx="12" cy="12" rx="4" ry="9"></ellipse>
-                  <path d="M3 12h18M5 6h14M5 18h14"></path></svg></a
-              ><a
-                aria-label="Source code on GitHub"
-                class="button quiet icon-button"
-                href="https://github.com/TarunB-Git/resume-2.0"
-                rel="noopener"
-                target="_blank"
-                title="Source code"
-                ><svg aria-hidden="true" viewBox="0 0 24 24">
-                  <path
-                    d="M12 .9a11.1 11.1 0 0 0-3.5 21.6c.6.1.8-.2.8-.5v-2.1c-3.2.7-3.9-1.4-3.9-1.4-.5-1.3-1.3-1.6-1.3-1.6-1-.7.1-.7.1-.7 1.1.1 1.7 1.1 1.7 1.1 1 1.7 2.6 1.2 3.3.9.1-.7.4-1.2.7-1.5-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11.2 11.2 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.7.8 1.2 1.8 1.2 3.1 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.1V22c0 .3.2.6.8.5A11.1 11.1 0 0 0 12 .9Z"
-                    fill="currentColor"
-                  ></path></svg
-              ></a>
-            </div>
           </div>
           <span aria-live="polite" class="build-state visually-hidden" id="buildState"></span>
           <div aria-label="Compile and support" class="compile-actions" role="group">
@@ -283,126 +256,15 @@
               <span class="material-symbols-rounded">redo</span>
             </button>
           </nav>
-          <div class="workspace-topline" id="workspaceTopline">
-            <div aria-label="Open resumes" class="resume-tabs" id="resumeTabs" role="tablist"></div>
-            <div class="output-controls" id="outputControls">
-              <div class="document-foot document-topbar">
-                <div class="document-primary-controls">
-                  <div aria-label="Output format" class="segmented mode-tabs" role="tablist">
-                    <button
-                      aria-selected="true"
-                      class="mode-tab active"
-                      data-mode="pdf"
-                      role="tab"
-                      tabindex="0"
-                    >
-                      PDF
-                    </button>
-                    <button
-                      aria-selected="false"
-                      class="mode-tab"
-                      data-mode="word"
-                      role="tab"
-                      tabindex="-1"
-                    >
-                      Word
-                    </button>
-                  </div>
-                  <details class="document-edit-menu">
-                    <summary class="button quiet">
-                      <span aria-hidden="true" class="material-symbols-rounded">edit</span> Edit
-                    </summary>
-                    <div class="document-edit-popover">
-                      <div class="edit-menu-title">Document style</div>
-                      <label class="edit-menu-field"
-                        ><span>Font</span
-                        ><select
-                          aria-label="Font family"
-                          class="small-select font-select"
-                          id="fontSelect"
-                        >
-                          <option value="Arial">Arial</option>
-                          <option value="Georgia">Georgia</option>
-                          <option value="Verdana">Verdana</option>
-                          <option value="Times New Roman">Times New Roman</option>
-                        </select></label
-                      ><label class="edit-menu-field"
-                        ><span>Color</span
-                        ><input
-                          aria-label="Accent color"
-                          class="accent-input"
-                          id="accentColor"
-                          title="Accent color"
-                          type="color" /></label
-                      ><label class="edit-menu-field"
-                        ><span>Bullets</span
-                        ><select
-                          aria-label="Bullet style"
-                          class="small-select"
-                          id="bulletSelect"
-                          title="Bullet style"
-                        >
-                          <option value="disc">• Bullets</option>
-                          <option value="dash">– Dashes</option>
-                          <option value="square">▪ Squares</option>
-                          <option value="arrow">› Arrows</option>
-                        </select></label
-                      >
-                      <div class="edit-menu-divider"></div>
-                      <button class="button quiet" id="formatSelectionButton">
-                        Format selected text…</button
-                      ><button
-                        aria-pressed="false"
-                        class="button quiet"
-                        id="templateEditMode"
-                        title="Save edits from JSON, LaTeX, and the document into your reusable template"
-                      >
-                        Edit permanently</button
-                      ><button class="button quiet" id="swapPanesButton">
-                        Swap source and document</button
-                      ><button
-                        class="button quiet"
-                        id="resetButton"
-                        title="Restore the example resume"
-                      >
-                        Reset example
-                      </button>
-                    </div>
-                  </details>
-                  <button
-                    aria-label="Preview generated PDF"
-                    class="button quiet"
-                    id="inspectPdfButton"
-                    title="Open the generated PDF"
-                  >
-                    <span aria-hidden="true" class="material-symbols-rounded">description</span
-                    ><span class="action-label">Preview PDF</span></button
-                  ><span class="visually-hidden" id="outputSubtitle"
-                    >Click to edit · right-click to format</span
-                  ><select
-                    aria-label="Paper size"
-                    class="paper-size-select"
-                    id="paperSize"
-                    title="Paper size"
-                  >
-                    <option value="a4">A4</option>
-                    <option value="letter">Letter</option>
-                    <option value="legal">Legal</option>
-                    <option value="a5">A5</option>
-                  </select>
-                </div>
-                <div aria-label="Workspace view" class="workspace-layout segmented" role="group">
-                  <button aria-pressed="true" class="layout-choice active" id="splitViewButton">
-                    Source &amp; document</button
-                  ><button aria-pressed="false" class="layout-choice" id="documentViewButton">
-                    Document only
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+
           <div class="workspace-panels" id="workspacePanels">
             <section class="pane editor-pane" data-panel-id="json" id="panelJson">
+              <div
+                aria-label="Open resumes"
+                class="resume-tabs"
+                id="resumeTabs"
+                role="tablist"
+              ></div>
               <div class="pane-head">
                 <div
                   class="pane-title"
@@ -664,6 +526,135 @@
               </div>
             </section>
             <section class="pane right-pane" data-panel-id="output" id="panelOutput">
+              <div class="output-controls" id="outputControls">
+                <div class="document-foot document-topbar">
+                  <div class="document-primary-controls">
+                    <div aria-label="Output format" class="segmented mode-tabs" role="tablist">
+                      <button
+                        aria-selected="true"
+                        class="mode-tab active"
+                        data-mode="pdf"
+                        role="tab"
+                        tabindex="0"
+                      >
+                        PDF
+                      </button>
+                      <button
+                        aria-selected="false"
+                        class="mode-tab"
+                        data-mode="word"
+                        role="tab"
+                        tabindex="-1"
+                      >
+                        Word
+                      </button>
+                    </div>
+                    <details class="document-edit-menu">
+                      <summary class="button quiet">
+                        <span aria-hidden="true" class="material-symbols-rounded">edit</span> Edit
+                      </summary>
+                      <div class="document-edit-popover">
+                        <div class="edit-menu-title">Document style</div>
+                        <label class="edit-menu-field"
+                          ><span>Font</span
+                          ><select
+                            aria-label="Font family"
+                            class="small-select font-select"
+                            id="fontSelect"
+                          >
+                            <option value="Arial">Arial</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Verdana">Verdana</option>
+                            <option value="Times New Roman">Times New Roman</option>
+                          </select></label
+                        ><label class="edit-menu-field"
+                          ><span>Color</span
+                          ><input
+                            aria-label="Accent color"
+                            class="accent-input"
+                            id="accentColor"
+                            title="Accent color"
+                            type="color" /></label
+                        ><label class="edit-menu-field"
+                          ><span>Bullets</span
+                          ><select
+                            aria-label="Bullet style"
+                            class="small-select"
+                            id="bulletSelect"
+                            title="Bullet style"
+                          >
+                            <option value="disc">• Bullets</option>
+                            <option value="dash">– Dashes</option>
+                            <option value="square">▪ Squares</option>
+                            <option value="arrow">› Arrows</option>
+                          </select></label
+                        >
+                        <div class="edit-menu-divider"></div>
+                        <button class="button quiet" id="formatSelectionButton">
+                          Format selected text…</button
+                        ><button
+                          aria-pressed="false"
+                          class="button quiet"
+                          id="templateEditMode"
+                          title="Save edits from JSON, LaTeX, and the document into your reusable template"
+                        >
+                          Edit permanently</button
+                        ><button class="button quiet" id="swapPanesButton">
+                          Swap source and document</button
+                        ><button
+                          class="button quiet"
+                          id="resetButton"
+                          title="Restore the example resume"
+                        >
+                          Reset example
+                        </button>
+                      </div>
+                    </details>
+                    <button
+                      aria-label="Preview generated PDF"
+                      class="button quiet"
+                      id="inspectPdfButton"
+                      title="Open the generated PDF"
+                    >
+                      <span aria-hidden="true" class="material-symbols-rounded">description</span
+                      ><span class="action-label">Preview PDF</span></button
+                    ><span class="visually-hidden" id="outputSubtitle"
+                      >Click to edit · right-click to format</span
+                    ><select
+                      aria-label="Paper size"
+                      class="paper-size-select"
+                      id="paperSize"
+                      title="Paper size"
+                    >
+                      <option value="a4">A4</option>
+                      <option value="letter">Letter</option>
+                      <option value="legal">Legal</option>
+                      <option value="a5">A5</option>
+                    </select>
+                  </div>
+                  <div aria-label="Workspace view" class="workspace-layout segmented" role="group">
+                    <button
+                      aria-pressed="true"
+                      class="layout-choice active"
+                      id="splitViewButton"
+                      aria-label="Source and document"
+                      title="Source and document"
+                    >
+                      <span class="layout-full-label">Source &amp; document</span
+                      ><span class="layout-short-label" aria-hidden="true">Split</span></button
+                    ><button
+                      aria-pressed="false"
+                      class="layout-choice"
+                      id="documentViewButton"
+                      aria-label="Document only"
+                      title="Document only"
+                    >
+                      <span class="layout-full-label">Document only</span
+                      ><span class="layout-short-label" aria-hidden="true">Document</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
               <div class="document-toolbar">
                 <div class="document-edit-actions">
                   <button
@@ -683,11 +674,18 @@
                   >
                     <span aria-hidden="true" class="material-symbols-rounded">redo</span>
                   </button>
-                  <details class="insert-menu">
-                    <summary class="button quiet">
-                      <span aria-hidden="true" class="material-symbols-rounded">add</span> Insert
-                    </summary>
-                    <div class="insert-options">
+                  <div class="insert-menu">
+                    <button
+                      aria-label="Insert résumé content"
+                      title="Insert résumé content"
+                      class="button quiet"
+                      id="insertButton"
+                      popovertarget="insertOptions"
+                    >
+                      <span aria-hidden="true" class="material-symbols-rounded">add</span
+                      ><span class="insert-label">Insert</span>
+                    </button>
+                    <div class="insert-options" id="insertOptions" popover="auto">
                       <button class="button quiet preview-tool" id="addSectionButton">
                         <span aria-hidden="true" class="material-symbols-rounded toolbar-icon"
                           >add</span
@@ -698,26 +696,29 @@
                         >Link
                       </button>
                     </div>
-                  </details>
+                  </div>
                 </div>
-                <div
-                  aria-label="Document page navigation"
-                  class="page-navigator"
-                  id="pageNavigator"
-                >
-                  <button aria-label="Previous page" id="previousPage">
-                    <span class="material-symbols-rounded">chevron_left</span></button
-                  ><input
-                    aria-label="Current page"
-                    class="page-number"
-                    id="pageNumber"
-                    min="1"
-                    type="number"
-                    value="1"
-                  /><span class="page-total" id="pageTotal">/ 1</span
-                  ><button aria-label="Next page" id="nextPage">
-                    <span class="material-symbols-rounded">chevron_right</span></button
-                  ><select aria-label="Preview zoom" class="zoom-select" id="previewZoom">
+                <div class="document-view-actions">
+                  <div
+                    aria-label="Document page navigation"
+                    class="page-navigator"
+                    id="pageNavigator"
+                  >
+                    <button aria-label="Previous page" id="previousPage">
+                      <span class="material-symbols-rounded">chevron_left</span></button
+                    ><input
+                      aria-label="Current page"
+                      class="page-number"
+                      id="pageNumber"
+                      min="1"
+                      type="number"
+                      value="1"
+                    /><span class="page-total" id="pageTotal">/ 1</span
+                    ><button aria-label="Next page" id="nextPage">
+                      <span class="material-symbols-rounded">chevron_right</span>
+                    </button>
+                  </div>
+                  <select aria-label="Preview zoom" class="zoom-select" id="previewZoom">
                     <option value="fit">Fit width</option>
                     <option value="page">Fit page</option>
                     <option value="0.75">75%</option>
