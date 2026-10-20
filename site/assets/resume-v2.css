@@ -769,7 +769,7 @@ a.button {
 /* Document gestures are local to these scroll regions. Browser zoom remains available elsewhere. */
 .preview-body,
 .pdf-proof-pages {
-  touch-action: pan-x pan-y;
+  touch-action: pan-x pan-y pinch-zoom;
   -webkit-overflow-scrolling: touch;
 }
 .comparison-tabs {

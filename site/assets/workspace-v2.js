@@ -280,7 +280,7 @@ function attachPinchZoom(host, getScale, setScale) {
     if (
       Number.isFinite(event.clientX) &&
       Number.isFinite(event.clientY) &&
-      (event.clientX !== 0 || event.clientY !== 0 || !cursor)
+      (event.clientX !== 0 || event.clientY !== 0)
     )
       return { x: event.clientX, y: event.clientY };
     return cursor;
@@ -290,7 +290,13 @@ function attachPinchZoom(host, getScale, setScale) {
     // A root-targeted WebKit gesture needs a hit test; ordinary events retain their target.
     const target = event.target;
     if (root === host) return true;
-    if (target && target !== root && target !== root.body && target !== root.documentElement)
+    if (
+      target &&
+      target !== root &&
+      target !== root.body &&
+      target !== root.documentElement &&
+      target !== root.defaultView
+    )
       return scope.contains(target);
     const point = eventPoint(event);
     return point

@@ -470,3 +470,58 @@ test("PDF preview keeps standard font text paint enabled rather than requesting 
     await task.destroy();
   }
 });
+test("Native root gestures without coordinates use the focused output instead of the page corner", () => {
+  const root = eventHub(),
+    host = eventHub(),
+    page = {},
+    source = {};
+  root.body = {};
+  root.documentElement = {};
+  root.defaultView = {};
+  root.activeElement = page;
+  root.elementFromPoint = () => page;
+  let scale = 1,
+    prevented = 0;
+  Object.assign(host, {
+    ownerDocument: root,
+    closest: () => ({ contains: (node) => node === page }),
+    getClientRects: () => [{}],
+  });
+  const c = {};
+  vm.createContext(c);
+  vm.runInContext(between(v2, "function attachPinchZoom(", "function syncViewportHeight("), c);
+  c.attachPinchZoom(
+    host,
+    () => scale,
+    (value) => (scale = value),
+  );
+  const pinch = (target) => ({
+    target,
+    ctrlKey: true,
+    clientX: 0,
+    clientY: 0,
+    deltaY: -20,
+    preventDefault() {
+      prevented++;
+    },
+  });
+  root.emit("wheel", pinch(root.body));
+  assert.ok(scale > 1);
+  const previous = scale;
+  root.emit("wheel", pinch(root.defaultView));
+  assert.ok(scale > previous);
+  root.activeElement = source;
+  const next = scale;
+  root.emit("wheel", pinch(root));
+  assert.equal(scale, next);
+  assert.equal(prevented, 2);
+});
+test("Browser-native pinch remains allowed and draft reload waits for the hidden preview to attach", () => {
+  const css = source("site/assets/resume-v2.css");
+  assert.match(css, /touch-action:\s*pan-x pan-y pinch-zoom/);
+  const browser = source("tests/browser.mjs");
+  assert.match(
+    browser,
+    /await page\.reload\(\);\s*await page\.waitForSelector\("#previewPages",\s*\{\s*state:\s*"attached"/,
+  );
+});
