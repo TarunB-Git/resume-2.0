@@ -1,14 +1,117 @@
+/* Reproduce the application-form demonstration with the bundled Tarun B files.
+ * Only the two document reader functions run in the isolated Node context.
+ * No browser page is executed and no file leaves this machine.
+ */
 const fs = require("node:fs");
 const path = require("node:path");
+const vm = require("node:vm");
+const crypto = require("node:crypto");
+const xml = require("xml-js");
 const formats = require("../assets/formats.js");
 const mapper = require("../assets/resume-parser.js");
-const example = require("./tarun.json");
-const report = formats.compareFormats(example, mapper);
-report.environment = { runtime: "Node.js", version: process.version };
-report.method =
-  "Median of 15 batches × 20 parse-and-map operations after warm-up; alternate execution order. No file reading, rendering or scoring is timed.";
-fs.writeFileSync(path.join(__dirname, "result.json"), JSON.stringify(report, null, 2) + "\n");
-for (const row of report.samples[0].results)
-  console.log(
-    `${row.format.toUpperCase()}: ${row.correct}/${row.total} fields; ${row.elapsed_ms} ms median; ${row.bytes} bytes`,
+const reference = require("./tarun.json");
+const assets = path.join(__dirname, "../assets");
+const pdfjsLib = require(path.join(assets, "pdf.min.js"));
+pdfjsLib.GlobalWorkerOptions.workerSrc = path.join(assets, "pdf.worker.min.js");
+class ReaderDOMParser {
+  parseFromString(source) {
+    const tree = xml.xml2js(source, { compact: false });
+    const text = (node) => (node.elements || []).map((child) => child.text || text(child)).join("");
+    const descendants = (node, name) =>
+      (node.elements || []).flatMap((child) =>
+        child.name === `w:${name}` ? [wrap(child)] : descendants(child, name),
+      );
+    const wrap = (node) => ({
+      textContent: text(node),
+      getElementsByTagNameNS: (_, name) => descendants(node, name),
+    });
+    return {
+      querySelector: () => null,
+      getElementsByTagNameNS: (_, name) => descendants(tree, name),
+    };
+  }
+}
+async function main() {
+  fs.writeFileSync(path.join(__dirname, "tarun.xml"), formats.toXml(reference));
+  const source = fs.readFileSync(path.join(assets, "studio.js"), "utf8");
+  const start = source.indexOf("async function extractTextFromPdf("),
+    end = source.indexOf("function parseResumeText(", start);
+  if (start < 0 || end <= start)
+    throw Error("Document reader boundaries changed; update the benchmark.");
+  const readers = source.slice(start, end);
+  const context = {
+    window: { pdfjsLib },
+    pdfjsLib,
+    DOMParser: ReaderDOMParser,
+    Uint8Array,
+    DataView,
+    TextDecoder,
+    DecompressionStream,
+    Response,
+    Blob,
+    console,
+  };
+  vm.createContext(context);
+  vm.runInContext(readers, context);
+  const expected = mapper.fillForm(reference),
+    results = [];
+  for (const format of ["json", "xml", "docx", "pdf"]) {
+    const filename = "tarun." + format,
+      bytes = fs.readFileSync(path.join(__dirname, filename));
+    const file = new Blob([bytes]);
+    let data,
+      text = "";
+    const started = performance.now();
+    if (format === "json") data = formats.assertModel(JSON.parse(bytes.toString("utf8")));
+    else if (format === "xml") data = formats.fromXml(bytes.toString("utf8"));
+    else {
+      const extracted = await (format === "pdf"
+        ? context.extractTextFromPdf(file, false)
+        : context.extractTextFromDocx(file));
+      text = extracted.text;
+      data = mapper.parseText(text);
+    }
+    const actual = mapper.fillForm(data),
+      elapsed_ms = Math.max(0.00001, Number((performance.now() - started).toFixed(5)));
+    results.push({
+      ...mapper.evaluate(actual, expected),
+      format,
+      sample_id: "tarun",
+      elapsed_ms,
+      bytes: bytes.length,
+      file: filename,
+      sha256: crypto.createHash("sha256").update(bytes).digest("hex"),
+      extracted_text: text,
+    });
+  }
+  const report = {
+    version: 2,
+    recorded_at: new Date().toISOString(),
+    kind: "Recorded local application-form demonstration",
+    method:
+      "One in-memory extraction, classification and mapping pass per file. File reads and scoring excluded. Fixed order JSON, XML, Word, PDF. PDF includes cold worker startup. No ATS vendor or universal speed claim.",
+    environment: { runtime: "Node.js", version: process.version, pdfjs: pdfjsLib.version },
+    reader_sha256: crypto.createHash("sha256").update(readers).digest("hex"),
+    classifier_sha256: crypto
+      .createHash("sha256")
+      .update(fs.readFileSync(path.join(assets, "resume-parser.js")))
+      .digest("hex"),
+    samples: [{ id: "tarun", name: "Tarun B", expected, results }],
+    timeScale: 16000 / Math.max(...results.map((row) => row.elapsed_ms)),
+  };
+  fs.writeFileSync(path.join(__dirname, "result.json"), JSON.stringify(report, null, 2) + "\n");
+  fs.writeFileSync(
+    path.join(assets, "comparison-result.js"),
+    "/* Generated by npm run benchmark from the bundled fictional fixtures. */\nwindow.ResumeComparisonReport = " +
+      JSON.stringify(report) +
+      ";\n",
   );
+  for (const row of results)
+    console.log(
+      `${row.format.toUpperCase()}: ${row.correct}/${row.total} mapped fields; ${row.elapsed_ms} ms recorded; ${row.bytes} bytes`,
+    );
+}
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

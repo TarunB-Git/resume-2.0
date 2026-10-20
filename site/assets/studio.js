@@ -2714,10 +2714,42 @@ function showImportReview(parsed, raw, filename, notes) {
   $("#newImport").onclick = () => accept(true);
 }
 
+let comparisonSource = "json";
+function comparisonRows() {
+  const sample = window.FormaBenchmark.samples[0];
+  return [comparisonSource, "docx", "pdf"].map((format) =>
+    sample.results.find((row) => row.format === format),
+  );
+}
 function showRecordedBenchmark() {
-  window.FormaBenchmark = measureFormatComparison(initialData);
+  window.FormaBenchmark = window.ResumeComparisonReport;
+  if (!window.FormaBenchmark) {
+    $("#benchmarkRunMeta").textContent =
+      "The recorded comparison could not load. Keep the assets folder beside this page.";
+    return;
+  }
   $("#benchmarkRunMeta").textContent =
-    "Measured in this browser: median of 15 batches × 20 parse-and-map operations after warm-up. File reading, rendering and scoring are excluded. This is not an ATS benchmark.";
+    "Recorded local demonstration using the current import readers and fictional Tarun B files. PDF includes cold worker startup. Field filling is illustrative; this is not an ATS benchmark.";
+  $$("[data-comparison-source]").forEach((tab) => {
+    tab.onclick = () => {
+      comparisonSource = tab.dataset.comparisonSource;
+      $$("[data-comparison-source]").forEach((button) => {
+        const active = button === tab;
+        button.setAttribute("aria-selected", String(active));
+        button.tabIndex = active ? 0 : -1;
+      });
+      buildWalkthrough();
+    };
+  });
+  $(".comparison-tabs").onkeydown = (event) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const tabs = $$("[data-comparison-source]");
+    const index =
+      event.key === "Home" ? 0 : event.key === "End" ? 1 : comparisonSource === "json" ? 1 : 0;
+    tabs[index].click();
+    tabs[index].focus();
+  };
   buildWalkthrough();
 }
 function recordedDuration(row) {
@@ -2739,44 +2771,41 @@ function buildWalkthrough() {
   pauseWalkthrough();
   walkthrough.position = 0;
   walkthrough.scrollEpoch++;
-  const sample = window.FormaBenchmark.samples[0];
-  walkthrough.duration = Math.max(...sample.results.map(recordedDuration));
+  const sample = window.FormaBenchmark.samples[0],
+    rows = comparisonRows();
+  walkthrough.duration = Math.max(...rows.map(recordedDuration));
   $("#walkthroughTimeline").max = String(walkthrough.duration);
-  $("#walkthroughForms").innerHTML = ["json", "xml"]
-    .map((format) => {
-      const row = sample.results.find((r) => r.format === format);
-      const label = format === "docx" ? "Word" : format.toUpperCase();
-      return `<section class="walkthrough-form" data-walkthrough-format="${format}" aria-label="${label} application form"><header><span class="application-brand">Careers / Application</span><strong>${label}</strong></header><div class="walkthrough-file"><span class="material-symbols-rounded" aria-hidden="true">description</span><span>${sample.id}.${format}</span><span class="walkthrough-file-state">Ready</span></div><progress class="walkthrough-progress" max="1" value="0" aria-label="${label} processing progress"></progress><div class="walkthrough-form-fields" tabindex="0" aria-label="${label} application fields">${row.fields.map((f, index) => `<div class="walkthrough-field" data-walkthrough-field="${index}"><span class="walkthrough-label">${escapeHtml(f.label)}</span><div class="walkthrough-value" title="${escapeHtml(f.actual || "Empty")}"><span></span></div><small class="walkthrough-correction">Expected: ${escapeHtml(f.expected)}</small></div>`).join("")}</div><footer class="walkthrough-score"></footer></section>`;
+  $("#walkthroughForms").innerHTML = rows
+    .map((row) => {
+      const format = row.format,
+        label = format === "docx" ? "Word" : format.toUpperCase();
+      return `<section class="walkthrough-form" data-walkthrough-format="${format}" aria-label="${label} application form"><header><span class="application-brand">Careers / Application</span><strong>${label}</strong></header><div class="walkthrough-file"><span class="material-symbols-rounded" aria-hidden="true">description</span><a href="benchmark/${escapeHtml(row.file)}" download>${escapeHtml(row.file)}</a><span class="walkthrough-file-state">Ready</span></div><progress class="walkthrough-progress" max="1" value="0" aria-label="${label} processing progress"></progress><div class="walkthrough-form-fields" tabindex="0" aria-label="${label} application fields">${row.fields.map((field, index) => `<div class="walkthrough-field" data-walkthrough-field="${index}"><span class="walkthrough-label">${escapeHtml(field.label)}</span><div class="walkthrough-value" title="${escapeHtml(field.actual || "Empty")}"><span></span></div><small class="walkthrough-correction">Expected: ${escapeHtml(field.expected || "Empty")}</small></div>`).join("")}</div><footer class="walkthrough-score"></footer></section>`;
     })
     .join("");
   renderWalkthrough();
   setWalkthroughPlaying(false);
 }
 function renderWalkthrough() {
-  const pos = walkthrough.position;
-  const sample = window.FormaBenchmark.samples[0];
-  const finished = pos >= walkthrough.duration;
-  const hasIssues = sample.results.some((row) =>
-    row.fields.some((field) => field.status !== "correct"),
-  );
+  const pos = walkthrough.position,
+    sample = window.FormaBenchmark.samples[0],
+    rows = comparisonRows(),
+    finished = pos >= walkthrough.duration;
   $("#walkthroughChapter").textContent = finished
     ? "Review results"
     : pos > 0
       ? "Processing files"
       : "Ready to compare";
   $("#walkthroughCaption").textContent = finished
-    ? hasIssues
-      ? "The highlighted fields need correction. Original processing times appear below each form."
-      : "All 12 fields were preserved, including empty values. Measured times appear below each form."
-    : `Both files start together. Playback is ${Math.round(window.FormaBenchmark.timeScale).toLocaleString()}× slower than measured parsing and mapping. Field filling is illustrative.`;
+    ? "Compare the highlighted fields with the source. Original local measurements appear below each form."
+    : `All three files start together. Playback is ${Math.round(window.FormaBenchmark.timeScale).toLocaleString()}× slower than recorded processing. Field filling is illustrated across each file’s duration.`;
   $("#walkthroughTimeline").value = String(pos);
   const clock = (ms) =>
     `${Math.floor(ms / 60000)}:${((ms / 1000) % 60).toFixed(1).padStart(4, "0")}`;
   $("#walkthroughTime").textContent = `${clock(pos)} / ${clock(walkthrough.duration)}`;
   for (const form of $$("[data-walkthrough-format]")) {
-    const row = sample.results.find((r) => r.format === form.dataset.walkthroughFormat);
-    const progress = recordedProgress(row, pos);
-    const complete = progress >= 1;
+    const row = rows.find((item) => item.format === form.dataset.walkthroughFormat),
+      progress = recordedProgress(row, pos),
+      complete = progress >= 1;
     form.querySelector(".walkthrough-file-state").textContent = complete
       ? "Complete"
       : pos > 0
@@ -2784,20 +2813,20 @@ function renderWalkthrough() {
         : "Ready";
     form.querySelector(".walkthrough-progress").value = progress;
     $$("[data-walkthrough-field]", form).forEach((node, index) => {
-      const field = row.fields[index];
-      const fieldProgress = Math.max(0, Math.min(1, progress * row.fields.length - index));
-      const value = String(field.actual || "Empty");
-      const text = fieldProgress ? value.slice(0, Math.ceil(value.length * fieldProgress)) : "";
-      const span = node.querySelector(".walkthrough-value span");
+      const field = row.fields[index],
+        p = Math.max(0, Math.min(1, progress * row.fields.length - index)),
+        value = String(field.actual || "Empty"),
+        span = node.querySelector(".walkthrough-value span");
+      const text = p ? value.slice(0, Math.ceil(value.length * p)) : "";
       if (span.textContent !== text) span.textContent = text;
-      node.classList.toggle("filling", fieldProgress > 0 && fieldProgress < 1);
-      node.classList.toggle("filled", fieldProgress === 1);
-      node.classList.toggle("incorrect", fieldProgress === 1 && field.status !== "correct");
-      node.classList.toggle("show-correction", fieldProgress === 1 && field.status !== "correct");
+      node.classList.toggle("filling", p > 0 && p < 1);
+      node.classList.toggle("filled", p === 1);
+      node.classList.toggle("incorrect", p === 1 && field.status !== "correct");
+      node.classList.toggle("show-correction", p === 1 && field.status !== "correct");
     });
-    const scroller = form.querySelector(".walkthrough-form-fields");
-    const explicitSeek = form.dataset.scrollEpoch !== String(walkthrough.scrollEpoch);
-    if (explicitSeek) {
+    const scroller = form.querySelector(".walkthrough-form-fields"),
+      seek = form.dataset.scrollEpoch !== String(walkthrough.scrollEpoch);
+    if (seek) {
       delete scroller.dataset.userScroll;
       scroller.scrollTop = 0;
     }
@@ -2808,29 +2837,42 @@ function renderWalkthrough() {
         )
       : Math.min(row.fields.length - 1, Math.floor(progress * row.fields.length));
     if (
-      (explicitSeek || form.dataset.focusIndex !== String(focusIndex)) &&
+      (seek || form.dataset.focusIndex !== String(focusIndex)) &&
       scroller.dataset.userScroll !== "true"
-    ) {
+    )
       scroller.scrollTop = Math.max(
         0,
         scroller.children[focusIndex].offsetTop -
           scroller.children[0].offsetTop -
           scroller.clientHeight / 3,
       );
-    }
     form.dataset.focusIndex = String(focusIndex);
     form.dataset.complete = String(complete);
     form.dataset.scrollEpoch = String(walkthrough.scrollEpoch);
     form.querySelector(".walkthrough-score").textContent = complete
-      ? `${row.correct} of ${row.total} details matched · ${row.elapsed_ms} ms recorded`
+      ? `${row.correct} of ${row.total} details matched · ${row.elapsed_ms.toFixed(3)} ms recorded`
       : pos > 0
         ? `Processing · ${Math.round(progress * 100)}%`
         : "Ready";
   }
   $("#walkthroughResult").hidden = !finished;
-  const resultMarkup = `<h3>Same content, two source formats</h3><p>Both formats preserved all ${sample.results[0].total} application fields from the same Tarun B example, including ${Object.values(sample.expected).filter((value) => !String(value).trim()).length} empty fields. JSON uses the browser’s native parser; XML uses this app’s typed XML reader. These measurements do not establish universal format speed or ATS compatibility.</p>`;
-  if ($("#walkthroughResult").innerHTML !== resultMarkup)
-    $("#walkthroughResult").innerHTML = resultMarkup;
+  const mistakes = rows
+    .filter((row) => row.format === "docx" || row.format === "pdf")
+    .map(
+      (row) =>
+        `<section><h4>${row.format === "docx" ? "Word" : "PDF"}</h4><ul>${
+          row.fields
+            .filter((field) => field.status !== "correct")
+            .map(
+              (field) =>
+                `<li><strong>${escapeHtml(field.label)}:</strong> ${escapeHtml(field.actual || "Not filled")}. Expected: ${escapeHtml(field.expected || "Empty")}.</li>`,
+            )
+            .join("") || "<li>All fields matched.</li>"
+        }</ul></section>`,
+    )
+    .join("");
+  const markup = `<h3>What needed correcting</h3><div class="comparison-mistakes">${mistakes}</div><p>${comparisonSource.toUpperCase()}: all ${rows[0].total} fields preserved, including ${Object.values(sample.expected).filter((value) => !String(value).trim()).length} empty fields. The highlighted values came from local document text extraction and classification. These results describe this demonstration; they do not predict every ATS.</p>`;
+  if ($("#walkthroughResult").innerHTML !== markup) $("#walkthroughResult").innerHTML = markup;
 }
 function setWalkthroughPlaying(playing) {
   walkthrough.playing = playing;

@@ -3452,14 +3452,6 @@ input[type="radio"] {
   }
 }
 @media (max-width: 900px) {
-  body {
-    overflow: auto;
-  }
-  .app {
-    height: auto;
-    min-height: 100dvh;
-    grid-template-rows: 64px auto 44px minmax(900px, 1fr);
-  }
   .toolbar {
     min-height: 52px;
     padding: 8px 12px;
@@ -3470,21 +3462,6 @@ input[type="radio"] {
   }
   .toolbar-right {
     display: none;
-  }
-  .main {
-    grid-template-columns: var(--workspace-sidebar-width, 160px) 8px minmax(0, 1fr);
-    grid-template-rows: minmax(900px, 1fr);
-  }
-  .main.files-hidden {
-    grid-template-columns: 46px 8px minmax(0, 1fr);
-    grid-template-rows: minmax(900px, 1fr);
-  }
-  .workspace-panels {
-    grid-template-rows: minmax(260px, 44fr) 8px minmax(260px, 56fr);
-    grid-template-columns: minmax(0, 1fr) !important;
-  }
-  .workspace-sidebar-resizer {
-    display: block;
   }
   .pane-head,
   .right-pane .pane-head {
@@ -3536,21 +3513,6 @@ input[type="radio"] {
   }
   #whyJsonButton {
     font-size: 11px;
-  }
-  .main,
-  .main.files-hidden {
-    grid-template-columns: 46px 8px minmax(0, 1fr);
-    padding: 8px;
-  }
-  .main:not(.files-hidden) .workspace-sidebar {
-    position: absolute;
-    left: 8px;
-    top: 8px;
-    bottom: 8px;
-    width: 220px;
-    z-index: 30;
-    background: var(--ui-surface);
-    box-shadow: 0 5px 30px #18283c30;
   }
   .pane-title {
     display: none;

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resume version="1">
+  <field name="template" type="string">modern</field>
+  <field name="format" type="object">
+    <field name="font" type="string">Arial</field>
+    <field name="accent" type="string">#1a73e8</field>
+    <field name="bullet" type="string">disc</field>
+  </field>
+  <field name="basics" type="object">
+    <field name="name" type="string">Tarun B</field>
+    <field name="label" type="string">Résumé maker</field>
+    <field name="email" type="string">1234@example.com</field>
+    <field name="phone" type="string"></field>
+    <field name="location" type="string"></field>
+    <field name="url" type="string">https://example.com</field>
+  </field>
+  <field name="summary" type="string">Résumé maker. This is generic example content to replace with your own details.</field>
+  <field name="experience" type="array">
+    <item type="object">
+      <field name="company" type="string">Resume Studios</field>
+      <field name="role" type="string">Résumé maker</field>
+      <field name="dates" type="string">2024 — Present</field>
+      <field name="highlights" type="array">
+        <item type="string">Create clear, editable résumés.</item>
+        <item type="string">Keep content separate from document styling.</item>
+      </field>
+    </item>
+  </field>
+  <field name="education" type="array"/>
+  <field name="skills" type="array">
+    <item type="string">HTML</item>
+    <item type="string">CSS</item>
+    <item type="string">JavaScript</item>
+  </field>
+  <field name="projects" type="array">
+    <item type="object">
+      <field name="name" type="string">Résumé editor</field>
+      <field name="description" type="string">A sample project for editing and exporting résumé content.</field>
+      <field name="url" type="string">https://example.com</field>
+    </item>
+  </field>
+</resume>

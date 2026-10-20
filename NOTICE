@@ -13,3 +13,6 @@ site/assets/THIRD-PARTY-NOTICES.txt and site/assets/LICENSE-APACHE-2.0.txt.
 The Harvard, Jake, Awesome CV and AltaCV inspired presets are independent
 browser layouts. They do not bundle the original LaTeX classes or imply
 endorsement by those projects.
+
+Development-only benchmark tooling includes xml-js and sax under their MIT
+licenses. These packages are not included in the browser runtime.

@@ -1302,40 +1302,6 @@ select {
   }
 }
 @media (max-width: 900px) {
-  .main,
-  .main.files-hidden {
-    grid-template-columns: 30px 0 minmax(0, 1fr);
-    padding: 6px;
-    overflow: hidden;
-  }
-  .main:not(.files-hidden) .workspace-sidebar {
-    position: absolute;
-    top: 6px;
-    left: 6px;
-    bottom: 6px;
-    z-index: 35;
-    width: 190px;
-    background: var(--ui-surface);
-    border: 1px solid var(--line);
-    box-shadow: var(--chrome-shadow);
-  }
-  .workspace-sidebar-resizer {
-    display: none;
-  }
-  .workspace-content {
-    overflow: hidden;
-  }
-  .workspace-panels {
-    overflow-y: auto;
-    min-height: 0;
-    height: 100%;
-  }
-  .workspace-panels > .pane {
-    min-height: 310px;
-  }
-  .workspace-panels.document-only > .pane {
-    min-height: 0;
-  }
   .toolbar-right {
     display: flex;
   }
@@ -1364,9 +1330,6 @@ select {
   }
 }
 @media (max-width: 650px) {
-  .app {
-    grid-template-rows: 54px minmax(0, 1fr);
-  }
   .brand-wrap {
     display: flex;
   }
@@ -1410,9 +1373,6 @@ select {
   }
   .export-caret {
     width: 26px;
-  }
-  .workspace-content {
-    grid-template-rows: 38px minmax(0, 1fr);
   }
   .toolbar {
     min-height: 38px;
@@ -2269,9 +2229,6 @@ body[data-appearance="apple"].dark-mode .layout-choice.active {
   border: 0;
 }
 @media (max-width: 900px) {
-  .workspace-content {
-    grid-template-rows: auto minmax(0, 1fr);
-  }
 }
 @media (max-width: 650px) {
   #editTemplateButton {

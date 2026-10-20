@@ -48,10 +48,14 @@ When importing external JSON Resume data, unmapped collections and nested source
 
 Imports detect content before relying on the filename. HTML is parsed without executing scripts. External PDF/DOCX extraction does not promise layout recovery; images and OCR are not supported.
 
-## JSON/XML measurement
+## Recorded application-form comparison
 
-Run `node site/benchmark/benchmark.cjs` to refresh the saved Node report. The in-app demonstration measures the current browser independently.
+The two tabs compare JSON / Word / PDF and XML / Word / PDF. Each uses the same fictional Tarun B content and document copies. The 12 mapped fields include five intentionally empty values; preserving those blanks counts as a match.
 
-The 12 mapped fields include five intentionally empty values; preservation of those blanks counts as a match. Both paths serialize the same Tarun B model with two-space indentation before measurement, warm up the readers, then alternate 15 batches of 20 parse-and-map operations. The report uses the median batch time per operation and reports payload bytes. File reading, rendering and scoring are excluded. Playback expands the slower median to six seconds using the same multiplier for both paths; gradual field filling is illustrative.
+Run `npm ci --ignore-scripts` and `npm run benchmark` to refresh the recorded result and the bundled data script. The runner executes only the app's PDF/DOCX reader functions in an isolated Node context, then uses the current local text classifier and field mapper. It never runs the application page or uploads a file. JSON and XML use their structured readers. Embedded restoration data is bypassed when comparing document text.
 
-The native JSON reader and this app's typed XML reader are different implementations. These results justify the default for this app only. They do not establish a universal parsing advantage, better résumé design or an ATS score. The former PDF/Word recordings were historical demonstrations of parser failures that have since been fixed; they are no longer the comparison shown in the app.
+One in-memory read, extraction, classification and mapping pass is timed per file. File loading from disk, dependency imports and scoring are excluded. Fixed order is JSON, XML, Word, PDF; PDF includes cold worker startup. These are recorded local measurements, not averages, a universal parsing comparison or an ATS score. Playback expands the longest duration to 16 seconds with the same multiplier for all formats. Gradual field filling is illustrative.
+
+The current fixture's “Résumé maker” job title is not recognized by the text classifier's job-title rules. The highlighted Word/PDF values come from that actual extraction and classification; the source readers preserve their named fields. The downloadable files, hashes, extracted text and scores are included with the report.
+
+`create-fixtures.py` regenerates PDF and DOCX from `tarun.json`; it optionally needs Python 3, `reportlab` and `python-docx`. The app and static build do not require Python.

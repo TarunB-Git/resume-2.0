@@ -27,6 +27,18 @@ async function checkViewport(browser, width) {
     true,
     "No viewport overflow",
   );
+  const workspaceBounds = await page.locator(".workspace-content").boundingBox();
+  assert.ok(
+    workspaceBounds.y + workspaceBounds.height <= 905.5,
+    "Workspace fits the visible height",
+  );
+  const headerOrder = await page
+    .locator(".compile-actions")
+    .evaluate((node) => [...node.children].map((child) => child.getBoundingClientRect().left));
+  assert.ok(
+    headerOrder[0] < headerOrder[1] && headerOrder[1] < headerOrder[2],
+    "Compile, help, bug order",
+  );
   for (const id of ["compileButton", "headerImportButton", "exportButton"]) {
     const bounds = await page.locator("#" + id).boundingBox();
     assert.ok(bounds && bounds.x >= 0 && bounds.x + bounds.width <= width + 1, id + " fits");
@@ -142,8 +154,12 @@ async function checkViewport(browser, width) {
     }
   }
   await page.goto(origin + "/#why-json");
-  await page.waitForSelector('[data-walkthrough-format="xml"]');
-  assert.equal(await page.locator("[data-walkthrough-format]").count(), 2);
+  await page.waitForSelector('[data-walkthrough-format="json"]');
+  assert.equal(await page.locator("[data-walkthrough-format]").count(), 3);
+  await page.click("#comparisonXmlTab");
+  assert.equal(await page.locator('[data-walkthrough-format="xml"]').count(), 1);
+  assert.equal(await page.locator('[data-walkthrough-format="json"]').count(), 0);
+  assert.equal(await page.locator("[data-walkthrough-format]").count(), 3);
   await page.click("#walkthroughStart");
   await page.screenshot({
     path: path.join(artifacts, `comparison-${browser.browserType().name()}-${width}.png`),

@@ -1,6 +1,6 @@
 /* Workspace controls size to the available pane. Header rows grow with their content. */
 .app {
-  grid-template-rows: 60px minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
 }
 .workspace-content {
   grid-template-rows: auto minmax(0, 1fr);
@@ -39,8 +39,30 @@
   gap: 6px;
   order: 0;
 }
-#reportBugButton {
-  order: -1;
+.compile-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  order: 1;
+  flex: 0 0 auto;
+}
+.compile-actions .compile-guide {
+  display: block;
+  margin: 0;
+  order: 1;
+  flex: 0 0 auto;
+}
+.compile-actions .compile-guide-summary {
+  width: 32px;
+  height: 36px;
+}
+.top-actions .compile-actions #compileButton {
+  margin: 0;
+  order: 0;
+}
+.compile-actions #reportBugButton {
+  order: 2;
+  flex: 0 0 auto;
 }
 .secondary-actions #appearanceCycle {
   order: 0;
@@ -52,14 +74,7 @@
 .secondary-actions #whyJsonButton {
   order: 2;
 }
-.secondary-actions .compile-guide {
-  margin-left: 0;
-  order: 3;
-}
-.top-actions #compileButton {
-  margin-left: 0;
-  order: 1;
-}
+
 .top-actions #headerImportButton {
   order: 2;
 }
@@ -207,7 +222,8 @@ a.button {
   text-wrap: wrap;
 }
 .walkthrough-forms {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: visible;
 }
 .walkthrough-form {
   min-width: 0;
@@ -257,9 +273,17 @@ a.button {
   }
 }
 @media (max-width: 900px) {
+  html,
+  body {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+  }
   .app {
     min-height: 0;
-    height: 100dvh;
+    height: var(--app-height, 100dvh);
+    width: 100%;
+    overflow: hidden;
   }
   .topbar {
     min-height: 60px;
@@ -341,14 +365,14 @@ a.button {
     display: flex;
     order: 5;
   }
-  .secondary-actions .compile-guide {
+  .compile-actions .compile-guide {
     display: block;
   }
-  .secondary-actions .compile-guide-summary {
+  .compile-actions .compile-guide-summary {
     min-height: 44px;
     min-width: 44px;
   }
-  .secondary-actions .compile-guide-popover {
+  .compile-actions .compile-guide-popover {
     position: fixed;
     top: 120px;
     right: 20px;
@@ -358,17 +382,23 @@ a.button {
   .main,
   .main.files-hidden {
     padding: 6px;
-    grid-template-columns: 0 0 minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    height: 100%;
+    width: 100%;
     gap: 0;
     min-height: 0;
   }
   .workspace-sidebar,
-  .workspace-sidebar-resizer {
+  .main > .workspace-sidebar-resizer {
     display: none;
   }
   .main:not(.files-hidden) .workspace-sidebar {
     display: flex;
     position: absolute;
+    background: var(--ui-surface);
+    border: 1px solid var(--line);
+    box-shadow: var(--chrome-shadow);
     width: min(280px, calc(100vw - 32px));
     max-width: none;
     z-index: 45;
@@ -377,6 +407,9 @@ a.button {
     left: 6px;
   }
   .workspace-content {
+    grid-column: 1;
+    grid-row: 1;
+    width: 100%;
     display: grid;
     grid-template-rows: auto auto minmax(0, 1fr);
     overflow: hidden;
@@ -522,8 +555,14 @@ a.button {
   .word-toolbar {
     padding: 5px 7px;
     gap: 5px;
-    max-height: 150px;
-    overflow: auto;
+    flex-wrap: nowrap;
+    max-height: 58px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-shrink: 0;
+  }
+  .word-toolbar > * {
+    flex-shrink: 0;
   }
   .word-toolbar .button,
   .word-toolbar select,
@@ -650,5 +689,176 @@ a.button {
   .secondary-actions,
   .topbar {
     display: none !important;
+  }
+}
+
+/* Document gestures are local to these scroll regions. Browser zoom remains available elsewhere. */
+.preview-body,
+.pdf-proof-pages {
+  touch-action: pan-x pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+.comparison-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.comparison-tabs [role="tab"] {
+  padding: 9px 12px;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--ui-surface);
+  color: var(--ui-muted);
+  cursor: pointer;
+}
+.comparison-tabs [aria-selected="true"] {
+  background: var(--ui-selected);
+  color: var(--ui-primary);
+  border-color: var(--ui-primary);
+}
+.comparison-tabs [role="tab"]:focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 2px;
+}
+.walkthrough-file a {
+  color: inherit;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.walkthrough-file a:hover {
+  text-decoration: underline;
+}
+@media (max-width: 1100px) {
+  .top-actions #headerImportButton .action-label,
+  .top-actions #exportButton .action-label {
+    display: none;
+  }
+  .top-actions #headerImportButton,
+  .top-actions #exportButton {
+    width: 44px;
+    min-width: 44px;
+    padding: 8px;
+  }
+}
+@media (max-width: 900px) {
+  .compile-actions {
+    gap: 2px;
+  }
+  .compile-actions #compileButton,
+  .compile-actions #reportBugButton,
+  .compile-actions .compile-guide-summary {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    padding: 8px;
+  }
+  .document-primary-controls #inspectPdfButton {
+    width: 44px;
+    min-width: 44px;
+    padding: 8px;
+  }
+  .document-primary-controls #inspectPdfButton .action-label {
+    display: none;
+  }
+  .preview-body {
+    overflow: auto;
+    scrollbar-gutter: auto;
+  }
+  .comparison-tabs [role="tab"] {
+    min-height: 44px;
+  }
+}
+@media (max-width: 700px) {
+  .player-heading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .walkthrough-forms {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .walkthrough-form-fields {
+    height: 220px;
+  }
+}
+@media (max-width: 600px) {
+  .topbar {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 44px;
+    grid-template-rows: 44px 44px;
+    height: auto;
+    min-height: 100px;
+    padding: 6px 8px;
+    gap: 4px;
+  }
+  .brand-wrap {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .top-actions {
+    grid-column: 1/-1;
+    grid-row: 2;
+    width: 100%;
+    justify-content: space-between;
+    gap: 6px;
+  }
+  .top-actions #moreActionsButton {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+  }
+  .secondary-actions {
+    top: 54px;
+  }
+  .compile-actions .compile-guide-popover {
+    top: 104px;
+  }
+}
+
+.comparison-mistakes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.comparison-mistakes h4 {
+  margin: 8px 0;
+}
+.comparison-mistakes ul {
+  padding-left: 18px;
+}
+@media (max-width: 600px) {
+  .comparison-mistakes {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+}
+
+@media (max-width: 900px) {
+  .file-entry {
+    grid-template-columns: minmax(0, 1fr) 44px;
+  }
+  .file-menu-button {
+    width: 44px;
+    height: 44px;
+  }
+  .secondary-actions #appearanceCycle {
+    width: 44px;
+    min-width: 44px;
+  }
+  .secondary-actions {
+    max-height: calc(var(--app-height, 100dvh) - 70px);
+  }
+  #pageNumber {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .document-edit-popover input,
+  .document-edit-popover select {
+    min-height: 44px;
+    min-width: 44px;
   }
 }

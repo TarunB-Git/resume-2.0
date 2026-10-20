@@ -38,7 +38,7 @@ Browser storage belongs to the current origin. Export a ZIP before moving from a
 - Resizable desktop panes; Source / Document switching and a Files drawer on small screens.
 - Fit width/page and document zoom from 25% to 300%, including pinch and ctrl-wheel gestures.
 
-The Why JSON page measures the same Tarun B data as JSON and XML. Both preserve the same fields. Its timings describe this app's parsers on the current device, and do not measure an ATS.
+The Why JSON page has two comparison tabs: JSON / Word / PDF and XML / Word / PDF. Both use the same Tarun B content. Recorded timings come from a local run of the actual document readers and field mapper; they do not measure an ATS.
 
 ## Formats and limits
 
@@ -70,7 +70,8 @@ No framework or backend is required. The pure format module also runs in Node. T
 npm run check
 npm test
 npm run build
-node site/benchmark/benchmark.cjs
+npm ci --ignore-scripts
+npm run benchmark
 ```
 
 To run browser workflows and produce screenshots with synthetic data:
@@ -80,6 +81,8 @@ npm ci --ignore-scripts
 npx playwright install --with-deps chromium webkit
 npm run test:browser
 ```
+
+The comparison uses the downloadable files in `site/benchmark/`. To regenerate its PDF/DOCX fixtures, use `python3 site/benchmark/create-fixtures.py` with `reportlab` and `python-docx` installed, then run `npm run benchmark`. Fixture generation is optional; the static build uses the checked-in files.
 
 The browser suite covers 320, 390, 768, 997 and 1280px in Chromium and WebKit. It is separate from the fast data tests. Real iOS/Android gestures and visual PDF/DOCX review remain manual release checks. Screenshots and exported fixtures go to ignored `artifacts/`; only publish reviewed results.
 

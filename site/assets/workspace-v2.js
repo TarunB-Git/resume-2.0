@@ -202,9 +202,6 @@ function showSessionImport(incoming, templates, filename, settings) {
     }
   };
 }
-function measureFormatComparison(data) {
-  return ResumeFormats.compareFormats(data, ResumeParser);
-}
 function setDocumentZoom(value, anchor) {
   const host = $("#previewBody"),
     stack = $("#previewPages");
@@ -241,54 +238,115 @@ function syncZoomControl() {
   }
 }
 function attachPinchZoom(host, getScale, setScale) {
-  let gesture = null;
+  let touchGesture = null,
+    webkitGesture = null,
+    lastPoint = null;
+  const clamp = (value) => Math.max(0.25, Math.min(3, value));
+  const options = { passive: false, capture: true };
+  const consume = (event) => {
+    if (event.cancelable !== false) event.preventDefault();
+  };
   const point = (touches) => ({
     x: (touches[0].clientX + touches[1].clientX) / 2,
     y: (touches[0].clientY + touches[1].clientY) / 2,
   });
   const distance = (touches) =>
     Math.hypot(touches[1].clientX - touches[0].clientX, touches[1].clientY - touches[0].clientY);
+  const center = (event) => {
+    if (Number.isFinite(event.clientX) && Number.isFinite(event.clientY))
+      return { x: event.clientX, y: event.clientY };
+    if (lastPoint) return lastPoint;
+    const bounds = host.getBoundingClientRect();
+    return { x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2 };
+  };
   host.addEventListener(
     "touchstart",
     (event) => {
-      if (event.touches.length === 2) {
-        event.preventDefault();
-        gesture = { distance: distance(event.touches), scale: getScale() };
-      }
+      if (event.touches.length !== 2) return;
+      consume(event);
+      lastPoint = point(event.touches);
+      touchGesture = { distance: distance(event.touches), scale: getScale() };
     },
-    { passive: false },
+    options,
   );
   host.addEventListener(
     "touchmove",
     (event) => {
-      if (gesture && event.touches.length === 2) {
-        event.preventDefault();
+      if (!touchGesture || event.touches.length !== 2) return;
+      consume(event);
+      lastPoint = point(event.touches);
+      if (!webkitGesture)
         setScale(
-          Math.max(
-            0.25,
-            Math.min(3, (gesture.scale * distance(event.touches)) / Math.max(1, gesture.distance)),
+          clamp(
+            (touchGesture.scale * distance(event.touches)) / Math.max(1, touchGesture.distance),
           ),
-          point(event.touches),
+          lastPoint,
         );
-      }
     },
-    { passive: false },
+    options,
   );
   for (const name of ["touchend", "touchcancel"])
-    host.addEventListener(name, () => {
-      gesture = null;
-    });
+    host.addEventListener(
+      name,
+      () => {
+        touchGesture = null;
+        lastPoint = null;
+        if (name === "touchcancel") webkitGesture = null;
+      },
+      options,
+    );
+  // Safari exposes trackpad pinches as GestureEvents instead of ctrl-wheel.
+  host.addEventListener(
+    "gesturestart",
+    (event) => {
+      consume(event);
+      webkitGesture = { scale: getScale(), initial: event.scale || 1 };
+    },
+    options,
+  );
+  host.addEventListener(
+    "gesturechange",
+    (event) => {
+      consume(event);
+      if (!webkitGesture) return;
+      setScale(
+        clamp((webkitGesture.scale * (event.scale || 1)) / webkitGesture.initial),
+        center(event),
+      );
+    },
+    options,
+  );
+  host.addEventListener(
+    "gestureend",
+    (event) => {
+      consume(event);
+      webkitGesture = null;
+      touchGesture = null;
+    },
+    options,
+  );
   host.addEventListener(
     "wheel",
     (event) => {
       if (!event.ctrlKey) return;
-      event.preventDefault();
-      setScale(Math.max(0.25, Math.min(3, getScale() * Math.exp(-event.deltaY * 0.008))), {
+      consume(event);
+      if (webkitGesture) return;
+      const unit =
+        event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? host.clientHeight || 600 : 1;
+      setScale(clamp(getScale() * Math.exp(-event.deltaY * unit * 0.008)), {
         x: event.clientX,
         y: event.clientY,
       });
     },
-    { passive: false },
+    options,
+  );
+}
+function syncViewportHeight() {
+  const viewport = window.visualViewport;
+  if (viewport && viewport.scale !== 1) return;
+  document.documentElement.style.setProperty(
+    "--app-height",
+    Math.round(viewport?.height || window.innerHeight) + "px",
   );
 }
 function showMobilePane(pane) {
@@ -300,6 +358,9 @@ function showMobilePane(pane) {
   renderPanelOrder();
 }
 function initializeWorkspaceV2() {
+  syncViewportHeight();
+  window.addEventListener("resize", syncViewportHeight);
+  window.visualViewport?.addEventListener("resize", syncViewportHeight);
   syncZoomControl();
   $("#xmlEditor").addEventListener("input", parseXmlLive);
   $("#previewBody").addEventListener("beforeinput", (event) => {

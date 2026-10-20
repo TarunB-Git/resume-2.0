@@ -2,15 +2,21 @@
   "name": "resume-2.0",
   "version": "1.0.0",
   "private": true,
-  "description": "A browser-local résumé editor with portable source and document exports.",
+  "description": "A browser-local r\u00e9sum\u00e9 editor with portable source and document exports.",
   "license": "Apache-2.0",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "check": "node scripts/check.mjs",
     "test": "node --test tests/*.test.cjs",
     "build": "node scripts/build.mjs",
     "start": "node scripts/serve.mjs",
-    "test:browser": "node tests/browser.mjs"
+    "test:browser": "node tests/browser.mjs",
+    "benchmark": "node site/benchmark/benchmark.cjs"
   },
-  "devDependencies": { "playwright": "1.62.1" }
+  "devDependencies": {
+    "playwright": "1.62.1",
+    "xml-js": "1.6.11"
+  }
 }
