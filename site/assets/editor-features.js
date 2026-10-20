@@ -611,6 +611,18 @@ function documentHtmlExport() {
     accent = /^#[0-9a-f]{6}$/i.test(resume.format?.accent || "") ? resume.format.accent : "#496f91";
   return `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(resume.basics?.name || "Resume")}</title><style>body{margin:0;background:#eee;color:#26323c;font-family:${font};font-size:12px;line-height:1.5}.resume-paper{background:white;box-sizing:border-box;width:${PAGE.width}px;min-height:${PAGE.height}px;margin:24px auto;padding:55px 62px;overflow-wrap:anywhere;--resume-accent:${accent}}h1{font-size:32px;margin:0}.resume-section-title{font-size:11px;color:var(--resume-accent);border-bottom:1px solid #ddd;margin:24px 0 10px;text-transform:uppercase}.resume-contact{display:flex;gap:13px;flex-wrap:wrap;font-size:10px;margin:12px 0 24px}.resume-entry-head{display:flex;justify-content:space-between;gap:12px}.resume-entry-sub{font-size:11px}.resume-entry{margin-bottom:14px}.resume-bullets{padding-left:0;list-style:none}.resume-bullets li{display:flex;gap:7px}.resume-skills{display:flex;gap:8px;flex-wrap:wrap}a{color:inherit}.rich-list-item{display:flex;gap:7px;list-style:none}.resume-paper[data-template=executive]{display:grid;grid-template-columns:31% 1fr;padding:0}.resume-aside{background:${accent};color:white;padding:45px 22px}.resume-aside .resume-contact{display:block}.resume-aside .contact-item{display:block}.resume-main{padding:45px 32px}.sidebar-resizer{display:none}@media print{body{background:white}.resume-paper{margin:0}@page{size:${paperSize().width}mm ${paperSize().height}mm}}</style></head><body>${resumeHtml()}<script type="application/json" id="resume20-source">${JSON.stringify(resume).replace(/</g, "\\u003c")}</script></body></html>`;
 }
+function portableDocumentSnapshot() {
+  const model = deepClone(resume);
+  return {
+    model,
+    jsonResume: ResumeFormats.toJsonResume(model),
+    documentHtml: documentHtmlExport(),
+    filename: safeFilename(),
+  };
+}
+function portableDocumentExport(pdfBytes, snapshot = portableDocumentSnapshot()) {
+  return ResumePortable.build({ ...snapshot, pdfBytes });
+}
 function archiveSegment(value) {
   return (
     String(value || "untitled")
@@ -661,7 +673,7 @@ async function exportWorkspaceZip() {
         [`${stem}.json`, JSON.stringify(resume, null, 2)],
         [`${stem}.xml`, ResumeFormats.toXml(resume)],
         [`${stem}.jsonresume.json`, JSON.stringify(ResumeFormats.toJsonResume(resume), null, 2)],
-        [`${stem}.html`, documentHtmlExport()],
+        [`${stem}.html`, portableDocumentExport(pdf)],
         [`${stem}.txt`, plainDocumentText()],
       );
       if (item.draftJson) files.push([`${stem}.draft.json`, item.draftJson]);

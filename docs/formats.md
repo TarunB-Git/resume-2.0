@@ -39,14 +39,39 @@ When importing external JSON Resume data, unmapped collections and nested source
 | --- | --- | --- |
 | JSON / XML | Complete app model | Exact model |
 | JSON Resume | Exchange with other résumé tools | App extension retains the original model |
-| PDF | Fixed application document | This app embeds JSON; external readers may ignore it |
+| PDF | Fixed application document with associated JSON files | Exact source in compatible readers; other readers may ignore attachments |
 | DOCX | Editable Word document | Native Word XML plus embedded app JSON |
-| HTML | Web document | Inert JSON payload restores app content |
+| HTML | Portable Human / PDF / JSON document | Inert JSON payload restores app content |
 | Markdown / LaTeX | Readable source and supported field edits | Linked fields and formatting metadata; external documents require review |
 | Text | Plain readable content | Heuristic extraction with review |
 | ZIP | Full workspace backup | Merge folders, résumés, templates, drafts, checkpoints and settings |
 
 Imports detect content before relying on the filename. HTML is parsed without executing scripts. External PDF/DOCX extraction does not promise layout recovery; images and OCR are not supported.
+
+## Portable résumé version 1
+
+The `.resume.html` export is one offline HTML document. Human presentation is sandboxed in an iframe. The PDF is embedded as base64 and opened locally through the browser's PDF viewer. JSON is stored as inert script data, with `<` escaped as `\u003c` so user content cannot terminate a data block. The reader's content security policy blocks background network connections. Viewing it does not upload résumé data or send analytics.
+
+| HTML block ID | Type | Meaning |
+| --- | --- | --- |
+| `resume-manifest` | `application/json` | `format: "resume20.document"`, `version: 1`, block identifiers and media types |
+| `resume-data` | `application/json` | JSON Resume fields, with exact app data under `meta.resume20` |
+| `resume20-source` | `application/json` | Complete editable app model |
+| `resume-person` | `application/ld+json` | Basic schema.org Person discovery fields; not the full résumé |
+| `resume-pdf` | `application/octet-stream` | Base64-encoded PDF bytes |
+
+A reader selects `script#resume-data[type="application/json"]` and parses its text as JSON. It must not execute the document. `ResumePortable.extract(html)` implements this contract for generated files; pass `"source"` as its second argument for the app model. The command-line reader accepts generated HTML, PDF and JSON, with a 50 MB file limit:
+
+```sh
+node scripts/read-resume.mjs tarun-b.resume.html
+node scripts/read-resume.mjs tarun-b.pdf --source
+```
+
+The JSON mode displays the same exchange data that the machine reader extracts. Human, PDF and JSON views share one export snapshot. Reader themes affect the interface, not the saved content or PDF pagination. Importing HTML restores the source model; it does not import the viewer as editable content.
+
+PDF exports use PDF 2.0 associated files: `resume.json` has `/AFRelationship /Data`; `resume20-source.json` has `/AFRelationship /Source`. Both also appear in the embedded-file name tree for readers that support attachments but not associated-file relationships. Content lengths and cross-reference offsets are measured in bytes. Legacy `forma-resume.json` attachments remain importable. This is not a claim of PDF/A or PDF/UA conformance.
+
+Readers need explicit support for these structured blocks or attachments. Their presence does not cause every PDF text extractor or ATS to return JSON. PDF text retains its visible résumé content; copy/paste and ordinary text extraction do not become JSON. The reader command fails clearly when a PDF has no structured attachment, rather than treating extracted text as exact source.
 
 ## Recorded application-form comparison
 

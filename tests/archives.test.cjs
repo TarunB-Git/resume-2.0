@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 const path = require("node:path");
 const F = require("../site/assets/formats.js");
+const P = require("../site/assets/portable-resume.js");
 const sample = require("../examples/tarun.json");
 const studio = fs.readFileSync(path.join(__dirname, "../site/assets/studio.js"), "utf8");
 const features = fs.readFileSync(path.join(__dirname, "../site/assets/editor-features.js"), "utf8");
@@ -60,8 +61,16 @@ function archiveContext() {
   };
   c.makePdf = () => new Blob(["synthetic PDF bytes"]);
   c.makeDocx = () => new Blob(["synthetic DOCX bytes"]);
-  for (const name of ["latexSource", "markdownSource", "documentHtmlExport", "plainDocumentText"])
+  for (const name of ["latexSource", "markdownSource", "plainDocumentText"])
     c[name] = () => c.resume.basics.name;
+  c.portableDocumentExport = (pdfBytes) =>
+    P.build({
+      model: c.resume,
+      jsonResume: F.toJsonResume(c.resume),
+      pdfBytes,
+      filename: "tarun-b",
+      documentHtml: "<html><head></head><body>Tarun B</body></html>",
+    });
   c.download = (blob) => {
     c.bundle = blob;
   };
@@ -98,6 +107,9 @@ test("Session ZIP contains every résumé, nine output variants, templates and r
         await c.readArchiveEntry(c.bundle, (name) => name === stem + "." + extension),
         stem + "." + extension,
       );
+  const portable = await c.readArchiveEntry(c.bundle, (name) => name === "Resumes/Tarun-B.html");
+  assert.deepEqual(P.extract(portable.text, "source"), sample);
+  assert.deepEqual(P.extract(portable.text), F.toJsonResume(sample));
   const manifest = JSON.parse(
     (await c.readArchiveEntry(c.bundle, (name) => name === "session.json")).text,
   );
