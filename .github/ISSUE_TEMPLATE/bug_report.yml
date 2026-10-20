@@ -1,0 +1,36 @@
+name: Report a bug
+description: Describe a problem with editing, importing, exporting or the workspace.
+title: '[Bug] '
+body:
+  - type: markdown
+    attributes:
+      value: Please use fictional content in examples. The app does not attach your résumé or browser details to this report.
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: '1. Open the app…'
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened?
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version (optional)
+      placeholder: Safari on iOS, Chrome on Windows…
+  - type: textarea
+    id: example
+    attributes:
+      label: Screenshot or small fictional example (optional)
+      description: Remove names, contact details and other personal information before sharing.

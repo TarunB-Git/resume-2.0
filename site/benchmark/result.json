@@ -1,0 +1,224 @@
+{
+  "samples": [
+    {
+      "id": "tarun",
+      "name": "Tarun B",
+      "expected": {
+        "name": "Tarun B",
+        "email": "1234@example.com",
+        "phone": "",
+        "location": "",
+        "website": "https://example.com",
+        "currentTitle": "Résumé maker",
+        "currentEmployer": "Resume Studios",
+        "currentDates": "2024 — Present",
+        "previousEmployer": "",
+        "institution": "",
+        "degree": "",
+        "skills": "HTML, CSS, JavaScript"
+      },
+      "results": [
+        {
+          "fields": [
+            {
+              "key": "name",
+              "label": "Full name",
+              "expected": "Tarun B",
+              "actual": "Tarun B",
+              "status": "correct"
+            },
+            {
+              "key": "email",
+              "label": "Email",
+              "expected": "1234@example.com",
+              "actual": "1234@example.com",
+              "status": "correct"
+            },
+            {
+              "key": "phone",
+              "label": "Phone",
+              "expected": "",
+              "actual": "",
+              "status": "correct"
+            },
+            {
+              "key": "location",
+              "label": "Current location",
+              "expected": "",
+              "actual": "",
+              "status": "correct"
+            },
+            {
+              "key": "website",
+              "label": "Website",
+              "expected": "https://example.com",
+              "actual": "https://example.com",
+              "status": "correct"
+            },
+            {
+              "key": "currentTitle",
+              "label": "Current job title",
+              "expected": "Résumé maker",
+              "actual": "Résumé maker",
+              "status": "correct"
+            },
+            {
+              "key": "currentEmployer",
+              "label": "Current employer",
+              "expected": "Resume Studios",
+              "actual": "Resume Studios",
+              "status": "correct"
+            },
+            {
+              "key": "currentDates",
+              "label": "Employment dates",
+              "expected": "2024 — Present",
+              "actual": "2024 — Present",
+              "status": "correct"
+            },
+            {
+              "key": "previousEmployer",
+              "label": "Previous employer",
+              "expected": "",
+              "actual": "",
+              "status": "correct"
+            },
+            {
+              "key": "institution",
+              "label": "School / university",
+              "expected": "",
+              "actual": "",
+              "status": "correct"
+            },
+            {
+              "key": "degree",
+              "label": "Degree",
+              "expected": "",
+              "actual": "",
+              "status": "correct"
+            },
+            {
+              "key": "skills",
+              "label": "Skills",
+              "expected": "HTML, CSS, JavaScript",
+              "actual": "HTML, CSS, JavaScript",
+              "status": "correct"
+            }
+          ],
+          "correct": 12,
+          "total": 12,
+          "missing": 0,
+          "wrong": 0,
+          "format": "json",
+          "sample_id": "tarun",
+          "elapsed_ms": 0.00977,
+          "p95_ms": 0.027771549999999933,
+          "bytes": 917
+        },
+        {
+          "fields": [
+            {
+              "key": "name",
+              "label": "Full name",
+              "expected": "Tarun B",
+              "actual": "Tarun B",
+              "status": "correct"
+            },
+            {
+              "key": "email",
+              "label": "Email",
+              "expected": "1234@example.com",
+              "actual": "1234@example.com",
+              "status": "correct"
+            },
+            {
+              "key": "phone",
+              "label": "Phone",
+              "expected": "",
+              "actual": "",
+              "status": "correct"
+            },
+            {
+              "key": "location",
+              "label": "Current location",
+              "expected": "",
+              "actual": "",
+              "status": "correct"
+            },
+            {
+              "key": "website",
+              "label": "Website",
+              "expected": "https://example.com",
+              "actual": "https://example.com",
+              "status": "correct"
+            },
+            {
+              "key": "currentTitle",
+              "label": "Current job title",
+              "expected": "Résumé maker",
+              "actual": "Résumé maker",
+              "status": "correct"
+            },
+            {
+              "key": "currentEmployer",
+              "label": "Current employer",
+              "expected": "Resume Studios",
+              "actual": "Resume Studios",
+              "status": "correct"
+            },
+            {
+              "key": "currentDates",
+              "label": "Employment dates",
+              "expected": "2024 — Present",
+              "actual": "2024 — Present",
+              "status": "correct"
+            },
+            {
+              "key": "previousEmployer",
+              "label": "Previous employer",
+              "expected": "",
+              "actual": "",
+              "status": "correct"
+            },
+            {
+              "key": "institution",
+              "label": "School / university",
+              "expected": "",
+              "actual": "",
+              "status": "correct"
+            },
+            {
+              "key": "degree",
+              "label": "Degree",
+              "expected": "",
+              "actual": "",
+              "status": "correct"
+            },
+            {
+              "key": "skills",
+              "label": "Skills",
+              "expected": "HTML, CSS, JavaScript",
+              "actual": "HTML, CSS, JavaScript",
+              "status": "correct"
+            }
+          ],
+          "correct": 12,
+          "total": 12,
+          "missing": 0,
+          "wrong": 0,
+          "format": "xml",
+          "sample_id": "tarun",
+          "elapsed_ms": 0.11417,
+          "p95_ms": 0.2699818499999999,
+          "bytes": 1869
+        }
+      ]
+    }
+  ],
+  "timeScale": 52553.21012525182,
+  "environment": {
+    "runtime": "Node.js",
+    "version": "v22.22.2"
+  },
+  "method": "Median of 15 batches × 20 parse-and-map operations after warm-up; alternate execution order. No file reading, rendering or scoring is timed."
+}

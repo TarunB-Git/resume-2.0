@@ -1,0 +1,41 @@
+{
+  "template": "modern",
+  "format": {
+    "font": "Arial",
+    "accent": "#1a73e8",
+    "bullet": "disc"
+  },
+  "basics": {
+    "name": "Tarun B",
+    "label": "Résumé maker",
+    "email": "1234@example.com",
+    "phone": "",
+    "location": "",
+    "url": "https://example.com"
+  },
+  "summary": "Résumé maker. This is generic example content to replace with your own details.",
+  "experience": [
+    {
+      "company": "Resume Studios",
+      "role": "Résumé maker",
+      "dates": "2024 — Present",
+      "highlights": [
+        "Create clear, editable résumés.",
+        "Keep content separate from document styling."
+      ]
+    }
+  ],
+  "education": [],
+  "skills": [
+    "HTML",
+    "CSS",
+    "JavaScript"
+  ],
+  "projects": [
+    {
+      "name": "Résumé editor",
+      "description": "A sample project for editing and exporting résumé content.",
+      "url": "https://example.com"
+    }
+  ]
+}

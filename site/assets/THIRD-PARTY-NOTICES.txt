@@ -1,0 +1,19 @@
+Google Material Symbols Rounded
+Copyright Google LLC. Licensed under the Apache License 2.0.
+Source: https://github.com/google/material-design-icons
+Font supplied by Google Fonts; bundled locally for offline use.
+
+Mozilla PDF.js 3.11.174
+Copyright Mozilla Foundation and contributors. Licensed under the Apache License 2.0.
+Source: https://github.com/mozilla/pdf.js
+Distribution: https://cdnjs.com/libraries/pdf.js/3.11.174
+PDF evaluation is disabled through isEvalSupported: false.
+
+The Apache License 2.0 text is in LICENSE-APACHE-2.0.txt.
+
+Template references
+The Harvard, Jake, Awesome CV, and AltaCV presets are independent browser layouts inspired by those formats. They do not include the original LaTeX classes or claim official endorsement.
+Harvard: https://careerservices.fas.harvard.edu/resources/
+Jake: https://www.overleaf.com/latex/templates/jakes-resume/syzfjbzwjncs
+Awesome CV: https://github.com/posquit0/Awesome-CV
+AltaCV: https://github.com/liantze/AltaCV

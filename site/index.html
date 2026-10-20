@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <meta content="#f8fafd" name="theme-color" />
+    <title>Résumé 2.0</title>
+    <link href="assets/studio.css" rel="stylesheet" />
+    <link href="assets/workspace-polish.css" rel="stylesheet" />
+    <link href="assets/resume-v2.css" rel="stylesheet" />
+    <meta
+      content="A browser-local résumé editor with JSON, XML, Markdown and LaTeX source, PDF and Word exports, and portable session backups."
+      name="description"
+    />
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand-wrap">
+          <div aria-label="Résumé 2.0" class="brand">
+            <span class="brand-resume">Résumé</span><span class="brand-studio">2.0</span>
+          </div>
+          <div class="project-links desktop-project-links">
+            <a
+              aria-label="Tarun’s website"
+              class="button quiet icon-button"
+              href="https://tarunb.me"
+              rel="noopener"
+              target="_blank"
+              title="tarunb.me"
+              ><svg aria-hidden="true" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="9"></circle>
+                <ellipse cx="12" cy="12" rx="4" ry="9"></ellipse>
+                <path d="M3 12h18M5 6h14M5 18h14"></path></svg></a
+            ><a
+              aria-label="Source code on GitHub"
+              class="button quiet icon-button"
+              href="https://github.com/TarunB-Git/resume-2.0"
+              rel="noopener"
+              target="_blank"
+              title="Source code"
+              ><svg aria-hidden="true" viewBox="0 0 24 24">
+                <path
+                  d="M12 .9a11.1 11.1 0 0 0-3.5 21.6c.6.1.8-.2.8-.5v-2.1c-3.2.7-3.9-1.4-3.9-1.4-.5-1.3-1.3-1.6-1.3-1.6-1-.7.1-.7.1-.7 1.1.1 1.7 1.1 1.7 1.1 1 1.7 2.6 1.2 3.3.9.1-.7.4-1.2.7-1.5-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11.2 11.2 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.7.8 1.2 1.8 1.2 3.1 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.1V22c0 .3.2.6.8.5A11.1 11.1 0 0 0 12 .9Z"
+                  fill="currentColor"
+                ></path></svg
+            ></a>
+          </div>
+        </div>
+        <div class="top-actions">
+          <div class="secondary-actions" id="secondaryActions">
+            <a
+              aria-label="Report a bug"
+              class="button quiet icon-button"
+              href="https://github.com/TarunB-Git/resume-2.0/issues/new?template=bug_report.yml"
+              id="reportBugButton"
+              rel="noopener"
+              target="_blank"
+              title="Report a bug"
+              ><svg aria-hidden="true" viewBox="0 0 24 24">
+                <path
+                  d="M9 3 7 1M15 3l2-2M5 9H2m3 5H2m3 5H2m17-10h3m-3 5h3m-3 5h3M9 7h6m-7 4h8m-4 0v9M8 7V6a4 4 0 0 1 8 0v1"
+                ></path>
+                <rect height="15" rx="7" width="14" x="5" y="7"></rect></svg></a
+            ><button
+              aria-label="Appearance: Material light. Switch to Apple light"
+              class="button quiet icon-button"
+              id="appearanceCycle"
+              title="Material light → Apple light"
+            >
+              <span aria-hidden="true" class="material-symbols-rounded">light_mode</span></button
+            ><button
+              class="button"
+              id="editTemplateButton"
+              title="Browse, create or import resume templates"
+            >
+              Templates</button
+            ><button class="button quiet" id="whyJsonButton">Why JSON?</button>
+            <details class="compile-guide">
+              <summary
+                aria-label="What does Compile do?"
+                class="compile-guide-summary"
+                title="What does Compile do?"
+              >
+                ?
+              </summary>
+              <div class="compile-guide-popover" id="compileHint">
+                <strong>Changes &amp; checkpoints</strong>
+                <p>
+                  Compile checks your document, compares it with the previous checkpoint, and saves
+                  a local version with matching downloads. It does not run a TeX compiler.
+                </p>
+                <p>
+                  This control is reserved for version history and future real-time collaboration.
+                  Collaboration is not connected yet; checkpoints stay on this device.
+                </p>
+                <small>Ctrl/Cmd + Enter</small>
+              </div>
+            </details>
+            <div class="project-links mobile-project-links">
+              <a
+                aria-label="Tarun’s website"
+                class="button quiet icon-button"
+                href="https://tarunb.me"
+                rel="noopener"
+                target="_blank"
+                title="tarunb.me"
+                ><svg aria-hidden="true" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="9"></circle>
+                  <ellipse cx="12" cy="12" rx="4" ry="9"></ellipse>
+                  <path d="M3 12h18M5 6h14M5 18h14"></path></svg></a
+              ><a
+                aria-label="Source code on GitHub"
+                class="button quiet icon-button"
+                href="https://github.com/TarunB-Git/resume-2.0"
+                rel="noopener"
+                target="_blank"
+                title="Source code"
+                ><svg aria-hidden="true" viewBox="0 0 24 24">
+                  <path
+                    d="M12 .9a11.1 11.1 0 0 0-3.5 21.6c.6.1.8-.2.8-.5v-2.1c-3.2.7-3.9-1.4-3.9-1.4-.5-1.3-1.3-1.6-1.3-1.6-1-.7.1-.7.1-.7 1.1.1 1.7 1.1 1.7 1.1 1 1.7 2.6 1.2 3.3.9.1-.7.4-1.2.7-1.5-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.2 1.2a11.2 11.2 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.8.1 3.1.7.8 1.2 1.8 1.2 3.1 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.1V22c0 .3.2.6.8.5A11.1 11.1 0 0 0 12 .9Z"
+                    fill="currentColor"
+                  ></path></svg
+              ></a>
+            </div>
+          </div>
+          <span aria-live="polite" class="build-state visually-hidden" id="buildState"></span>
+
+          <button
+            aria-describedby="compileHint"
+            aria-label="Compile and compare changes"
+            class="button primary compile-button icon-button"
+            id="compileButton"
+            title="Save a local checkpoint and compare changes (Ctrl/Cmd+Enter)"
+          >
+            <span aria-hidden="true" class="material-symbols-rounded">play_arrow</span
+            ><span class="compile-label visually-hidden">Compile</span>
+          </button>
+
+          <button
+            aria-label="Import résumé or session"
+            class="button header-import"
+            id="headerImportButton"
+            title="Import a résumé or restore a session"
+          >
+            <span aria-hidden="true" class="material-symbols-rounded">upload_file</span
+            ><span class="action-label">Import</span>
+          </button>
+          <div class="export-wrap">
+            <button
+              aria-label="Export current document"
+              class="button primary export-main"
+              id="exportButton"
+            >
+              <span aria-hidden="true" class="material-symbols-rounded">save</span
+              ><span class="action-label">Export</span>
+            </button>
+            <button
+              aria-expanded="false"
+              aria-label="Choose export format"
+              class="button primary export-caret"
+              id="exportMenuToggle"
+            >
+              <span aria-hidden="true" class="material-symbols-rounded">expand_more</span>
+            </button>
+            <div class="export-menu hidden" id="exportMenu" role="menu">
+              <button data-export="pdf" role="menuitem">PDF <span>Portable document</span></button>
+              <button data-export="print" role="menuitem">
+                Print / PDF <span>Browser fonts and Unicode</span>
+              </button>
+              <button data-export="latex" role="menuitem">
+                LaTeX <span>Editable .tex source</span>
+              </button>
+              <button data-export="word" role="menuitem">Word <span>Editable .docx</span></button>
+              <button data-export="markdown" role="menuitem">
+                Markdown <span>Readable .md file</span>
+              </button>
+              <button data-export="json" role="menuitem">
+                JSON <span>Structured resume data</span>
+              </button>
+              <button data-export="zip" role="menuitem">
+                ZIP <span>All resumes · all formats</span>
+              </button>
+              <button data-export="xml" role="menuitem">XML<span>Typed résumé source</span></button
+              ><button data-export="json-resume" role="menuitem">
+                JSON Resume<span>Standard data interchange</span></button
+              ><button data-export="html" role="menuitem">HTML<span>Web document</span></button
+              ><button data-export="text" role="menuitem">
+                Plain text<span>Readable .txt file</span>
+              </button>
+            </div>
+          </div>
+          <button
+            aria-controls="secondaryActions"
+            aria-expanded="false"
+            aria-label="More actions"
+            class="button quiet icon-button more-actions"
+            id="moreActionsButton"
+            title="More actions"
+          >
+            <span aria-hidden="true" class="material-symbols-rounded">more_vert</span>
+          </button>
+        </div>
+      </header>
+      <main class="main">
+        <aside aria-label="Resume folders" class="workspace-sidebar" id="fileSidebar">
+          <div class="workspace-side-head">
+            <span aria-label="Files" class="files-heading" title="Files"
+              ><span aria-hidden="true" class="material-symbols-rounded">folder</span></span
+            >
+            <button
+              aria-label="Import resume"
+              class="button quiet icon-button"
+              id="importResumeButton"
+              title="Import a résumé or restore a session"
+            >
+              <span aria-hidden="true" class="material-symbols-rounded">upload_file</span></button
+            ><button
+              aria-label="Create folder"
+              class="button quiet icon-button"
+              id="newFolderButton"
+              title="Create folder"
+            >
+              <span class="material-symbols-rounded">create_new_folder</span></button
+            ><button
+              aria-controls="fileSidebar"
+              aria-expanded="true"
+              aria-label="Collapse file sidebar"
+              class="button quiet icon-button sidebar-collapse"
+              id="sidebarCollapseButton"
+              title="Collapse files"
+            >
+              <span aria-hidden="true" class="material-symbols-rounded">chevron_left</span>
+            </button>
+          </div>
+          <div class="folder-tree" id="folderTree"></div>
+          <div class="outline-head">
+            <span>Sections</span><span class="outline-hint">Drag to reorder</span>
+          </div>
+          <div class="section-outline" id="sectionOutline"></div>
+        </aside>
+        <div
+          aria-label="Resize file browser"
+          aria-orientation="vertical"
+          class="workspace-sidebar-resizer"
+          id="workspaceSidebarResizer"
+          role="separator"
+          tabindex="0"
+        ></div>
+        <div class="workspace-content">
+          <nav aria-label="Workspace" class="mobile-workspace-bar">
+            <button
+              aria-label="Files"
+              class="button quiet icon-button"
+              id="mobileFilesButton"
+              title="Files"
+            >
+              <span class="material-symbols-rounded">folder</span>
+            </button>
+            <div aria-label="Visible editor" class="segmented" role="group">
+              <button aria-pressed="false" class="layout-choice" id="mobileSourceButton">
+                Source</button
+              ><button aria-pressed="true" class="layout-choice active" id="mobileDocumentButton">
+                Document
+              </button>
+            </div>
+            <button
+              aria-label="Undo"
+              class="button quiet icon-button"
+              id="mobileUndoButton"
+              title="Undo"
+            >
+              <span class="material-symbols-rounded">undo</span></button
+            ><button
+              aria-label="Redo"
+              class="button quiet icon-button"
+              id="mobileRedoButton"
+              title="Redo"
+            >
+              <span class="material-symbols-rounded">redo</span>
+            </button>
+          </nav>
+          <div class="workspace-topline" id="workspaceTopline">
+            <div aria-label="Open resumes" class="resume-tabs" id="resumeTabs" role="tablist"></div>
+            <div class="output-controls" id="outputControls">
+              <div class="document-foot document-topbar">
+                <div class="document-primary-controls">
+                  <div aria-label="Output format" class="segmented mode-tabs" role="tablist">
+                    <button
+                      aria-selected="true"
+                      class="mode-tab active"
+                      data-mode="pdf"
+                      role="tab"
+                      tabindex="0"
+                    >
+                      PDF
+                    </button>
+                    <button
+                      aria-selected="false"
+                      class="mode-tab"
+                      data-mode="word"
+                      role="tab"
+                      tabindex="-1"
+                    >
+                      Word
+                    </button>
+                  </div>
+                  <details class="document-edit-menu">
+                    <summary class="button quiet">
+                      <span aria-hidden="true" class="material-symbols-rounded">edit</span> Edit
+                    </summary>
+                    <div class="document-edit-popover">
+                      <div class="edit-menu-title">Document style</div>
+                      <label class="edit-menu-field"
+                        ><span>Font</span
+                        ><select
+                          aria-label="Font family"
+                          class="small-select font-select"
+                          id="fontSelect"
+                        >
+                          <option value="Arial">Arial</option>
+                          <option value="Georgia">Georgia</option>
+                          <option value="Verdana">Verdana</option>
+                          <option value="Times New Roman">Times New Roman</option>
+                        </select></label
+                      ><label class="edit-menu-field"
+                        ><span>Color</span
+                        ><input
+                          aria-label="Accent color"
+                          class="accent-input"
+                          id="accentColor"
+                          title="Accent color"
+                          type="color" /></label
+                      ><label class="edit-menu-field"
+                        ><span>Bullets</span
+                        ><select
+                          aria-label="Bullet style"
+                          class="small-select"
+                          id="bulletSelect"
+                          title="Bullet style"
+                        >
+                          <option value="disc">• Bullets</option>
+                          <option value="dash">– Dashes</option>
+                          <option value="square">▪ Squares</option>
+                          <option value="arrow">› Arrows</option>
+                        </select></label
+                      >
+                      <div class="edit-menu-divider"></div>
+                      <button class="button quiet" id="formatSelectionButton">
+                        Format selected text…</button
+                      ><button
+                        aria-pressed="false"
+                        class="button quiet"
+                        id="templateEditMode"
+                        title="Save edits from JSON, LaTeX, and the document into your reusable template"
+                      >
+                        Edit permanently</button
+                      ><button class="button quiet" id="swapPanesButton">
+                        Swap source and document</button
+                      ><button
+                        class="button quiet"
+                        id="resetButton"
+                        title="Restore the example resume"
+                      >
+                        Reset example
+                      </button>
+                    </div>
+                  </details>
+                  <button class="button quiet" id="inspectPdfButton" title="Open the generated PDF">
+                    Preview PDF</button
+                  ><span class="visually-hidden" id="outputSubtitle"
+                    >Click to edit · right-click to format</span
+                  ><select
+                    aria-label="Paper size"
+                    class="paper-size-select"
+                    id="paperSize"
+                    title="Paper size"
+                  >
+                    <option value="a4">A4</option>
+                    <option value="letter">Letter</option>
+                    <option value="legal">Legal</option>
+                    <option value="a5">A5</option>
+                  </select>
+                </div>
+                <div aria-label="Workspace view" class="workspace-layout segmented" role="group">
+                  <button aria-pressed="true" class="layout-choice active" id="splitViewButton">
+                    Source &amp; document</button
+                  ><button aria-pressed="false" class="layout-choice" id="documentViewButton">
+                    Document only
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="workspace-panels" id="workspacePanels">
+            <section class="pane editor-pane" data-panel-id="json" id="panelJson">
+              <div class="pane-head">
+                <div
+                  class="pane-title"
+                  data-panel-handle="json"
+                  draggable="true"
+                  title="Drag to swap source and document"
+                >
+                  Source
+                </div>
+                <div class="pane-head-actions">
+                  <button
+                    aria-pressed="true"
+                    class="button quiet wrap-toggle"
+                    data-wrap-source=""
+                    title="Toggle source line wrapping"
+                  >
+                    Wrap
+                  </button>
+                  <div aria-label="Input format" class="segmented input-tabs" role="tablist">
+                    <button
+                      aria-selected="true"
+                      class="input-tab active"
+                      data-input="json"
+                      role="tab"
+                    >
+                      JSON</button
+                    ><button aria-selected="false" class="input-tab" data-input="xml" role="tab">
+                      XML</button
+                    ><button aria-selected="false" class="input-tab" data-input="latex" role="tab">
+                      LaTeX</button
+                    ><button
+                      aria-selected="false"
+                      class="input-tab"
+                      data-input="markdown"
+                      role="tab"
+                    >
+                      Markdown
+                    </button>
+                  </div>
+                  <button
+                    aria-label="Copy current source"
+                    class="button quiet icon-button"
+                    data-copy-source=""
+                    title="Copy current source"
+                  >
+                    <span aria-hidden="true" class="material-symbols-rounded">content_copy</span>
+                  </button>
+                </div>
+              </div>
+              <div class="editor-wrap">
+                <div class="code-scroll" id="jsonScroll">
+                  <pre aria-hidden="true" class="code-layer" id="highlight"></pre>
+                  <div aria-hidden="true" class="line-numbers" id="lineNumbers"></div>
+                  <textarea
+                    aria-label="Resume JSON source"
+                    autocapitalize="off"
+                    autocomplete="off"
+                    id="jsonEditor"
+                    spellcheck="false"
+                    wrap="soft"
+                  ></textarea>
+                </div>
+              </div>
+              <div class="editor-foot">
+                <div class="status-line">
+                  <span class="status-dot" id="jsonStatusDot"></span
+                  ><span aria-live="polite" id="jsonStatus">JSON valid · preview synced</span>
+                </div>
+                <span id="jsonStats">UTF-8 · JSON</span>
+                <button class="button add-field" id="addFieldButton">
+                  <span aria-hidden="true" class="material-symbols-rounded toolbar-icon">add</span>
+                  Add JSON field
+                </button>
+                <details class="json-error-details" hidden="" id="jsonErrorDetails">
+                  <summary>Full error details</summary>
+                  <pre id="jsonErrorRaw"></pre>
+                </details>
+              </div>
+            </section>
+            <section class="pane editor-pane xml-pane" data-panel-id="xml" id="panelXml">
+              <div class="pane-head">
+                <div
+                  class="pane-title"
+                  data-panel-handle="xml"
+                  draggable="true"
+                  title="Drag to swap source and document"
+                >
+                  Source
+                </div>
+                <div class="pane-head-actions">
+                  <button
+                    aria-pressed="true"
+                    class="button quiet wrap-toggle"
+                    data-wrap-source=""
+                    title="Toggle source line wrapping"
+                  >
+                    Wrap
+                  </button>
+                  <div aria-label="Input format" class="segmented input-tabs" role="tablist">
+                    <button aria-selected="false" class="input-tab" data-input="json" role="tab">
+                      JSON</button
+                    ><button
+                      aria-selected="true"
+                      class="input-tab active"
+                      data-input="xml"
+                      role="tab"
+                    >
+                      XML</button
+                    ><button aria-selected="false" class="input-tab" data-input="latex" role="tab">
+                      LaTeX</button
+                    ><button
+                      aria-selected="false"
+                      class="input-tab"
+                      data-input="markdown"
+                      role="tab"
+                    >
+                      Markdown
+                    </button>
+                  </div>
+                  <button
+                    aria-label="Copy current source"
+                    class="button quiet icon-button"
+                    data-copy-source=""
+                    title="Copy current source"
+                  >
+                    <span aria-hidden="true" class="material-symbols-rounded">content_copy</span>
+                  </button>
+                </div>
+              </div>
+              <div class="editor-wrap">
+                <textarea
+                  aria-label="XML résumé source"
+                  class="markdown-input"
+                  id="xmlEditor"
+                  spellcheck="false"
+                ></textarea>
+              </div>
+              <div class="editor-foot">
+                <span aria-live="polite" id="xmlStatus">XML source · edits sync automatically</span
+                ><span id="xmlStats">UTF-8 · XML</span>
+              </div>
+            </section>
+            <section class="pane latex-pane" data-panel-id="latex" id="panelLatex">
+              <div class="pane-head">
+                <div
+                  class="pane-title"
+                  data-panel-handle="latex"
+                  draggable="true"
+                  title="Drag to swap source and document"
+                >
+                  Source
+                </div>
+                <div class="pane-head-actions">
+                  <button
+                    aria-pressed="true"
+                    class="button quiet wrap-toggle"
+                    data-wrap-source=""
+                    title="Toggle source line wrapping"
+                  >
+                    Wrap
+                  </button>
+                  <div aria-label="Input format" class="segmented input-tabs" role="tablist">
+                    <button aria-selected="false" class="input-tab" data-input="json" role="tab">
+                      JSON</button
+                    ><button aria-selected="false" class="input-tab" data-input="xml" role="tab">
+                      XML</button
+                    ><button
+                      aria-selected="true"
+                      class="input-tab active"
+                      data-input="latex"
+                      role="tab"
+                    >
+                      LaTeX</button
+                    ><button
+                      aria-selected="false"
+                      class="input-tab"
+                      data-input="markdown"
+                      role="tab"
+                    >
+                      Markdown
+                    </button>
+                  </div>
+                  <button
+                    aria-label="Copy current source"
+                    class="button quiet icon-button"
+                    data-copy-source=""
+                    title="Copy current source"
+                  >
+                    <span aria-hidden="true" class="material-symbols-rounded">content_copy</span>
+                  </button>
+                </div>
+              </div>
+              <div class="editor-wrap"><div class="code-scroll" id="latexScroll"></div></div>
+              <div class="editor-foot">
+                <div class="status-line">
+                  <span class="status-dot"></span
+                  ><span>LaTeX source · edits sync automatically</span>
+                </div>
+                <span>UTF-8 · TeX</span>
+              </div>
+            </section>
+            <section class="pane editor-pane" data-panel-id="markdown" id="panelMarkdown">
+              <div class="pane-head">
+                <div
+                  class="pane-title"
+                  data-panel-handle="markdown"
+                  draggable="true"
+                  title="Drag to swap source and document"
+                >
+                  Source
+                </div>
+                <div class="pane-head-actions">
+                  <button
+                    aria-pressed="true"
+                    class="button quiet wrap-toggle"
+                    data-wrap-source=""
+                    title="Toggle source line wrapping"
+                  >
+                    Wrap
+                  </button>
+                  <div aria-label="Input format" class="segmented input-tabs" role="tablist">
+                    <button aria-selected="false" class="input-tab" data-input="json" role="tab">
+                      JSON</button
+                    ><button aria-selected="false" class="input-tab" data-input="xml" role="tab">
+                      XML</button
+                    ><button aria-selected="false" class="input-tab" data-input="latex" role="tab">
+                      LaTeX</button
+                    ><button
+                      aria-selected="true"
+                      class="input-tab active"
+                      data-input="markdown"
+                      role="tab"
+                    >
+                      Markdown
+                    </button>
+                  </div>
+                  <button
+                    aria-label="Copy current source"
+                    class="button quiet icon-button"
+                    data-copy-source=""
+                    title="Copy current source"
+                  >
+                    <span aria-hidden="true" class="material-symbols-rounded">content_copy</span>
+                  </button>
+                </div>
+              </div>
+              <div class="editor-wrap">
+                <textarea
+                  aria-label="Resume Markdown source"
+                  class="markdown-input"
+                  id="markdownInput"
+                  spellcheck="false"
+                ></textarea>
+              </div>
+              <div class="editor-foot">
+                <span aria-live="polite" id="markdownStatus"
+                  >Headings and bullets · edits sync automatically</span
+                ><span>UTF-8 · MD</span>
+              </div>
+            </section>
+            <section class="pane right-pane" data-panel-id="output" id="panelOutput">
+              <div class="document-toolbar">
+                <div class="document-edit-actions">
+                  <button
+                    aria-label="Undo document edit"
+                    class="button quiet icon-button"
+                    disabled=""
+                    id="undoDocument"
+                    title="Undo document edit"
+                  >
+                    <span aria-hidden="true" class="material-symbols-rounded">undo</span></button
+                  ><button
+                    aria-label="Redo document edit"
+                    class="button quiet icon-button"
+                    disabled=""
+                    id="redoDocument"
+                    title="Redo document edit"
+                  >
+                    <span aria-hidden="true" class="material-symbols-rounded">redo</span>
+                  </button>
+                  <details class="insert-menu">
+                    <summary class="button quiet">
+                      <span aria-hidden="true" class="material-symbols-rounded">add</span> Insert
+                    </summary>
+                    <div class="insert-options">
+                      <button class="button quiet preview-tool" id="addSectionButton">
+                        <span aria-hidden="true" class="material-symbols-rounded toolbar-icon"
+                          >add</span
+                        >Section</button
+                      ><button class="button quiet preview-tool" id="addLinkButton">
+                        <span aria-hidden="true" class="material-symbols-rounded toolbar-icon"
+                          >insert_link</span
+                        >Link
+                      </button>
+                    </div>
+                  </details>
+                </div>
+                <div
+                  aria-label="Document page navigation"
+                  class="page-navigator"
+                  id="pageNavigator"
+                >
+                  <button aria-label="Previous page" id="previousPage">
+                    <span class="material-symbols-rounded">chevron_left</span></button
+                  ><input
+                    aria-label="Current page"
+                    class="page-number"
+                    id="pageNumber"
+                    min="1"
+                    type="number"
+                    value="1"
+                  /><span class="page-total" id="pageTotal">/ 1</span
+                  ><button aria-label="Next page" id="nextPage">
+                    <span class="material-symbols-rounded">chevron_right</span></button
+                  ><select aria-label="Preview zoom" class="zoom-select" id="previewZoom">
+                    <option value="fit">Fit width</option>
+                    <option value="page">Fit page</option>
+                    <option value="0.75">75%</option>
+                    <option selected="" value="1">100%</option>
+                    <option value="1.25">125%</option>
+                    <option value="1.5">150%</option>
+                    <option value="2">200%</option>
+                  </select>
+                </div>
+                <span id="documentStats">A4</span>
+              </div>
+              <div
+                aria-label="Word formatting"
+                class="word-toolbar hidden"
+                id="wordToolbar"
+                role="toolbar"
+              >
+                <select aria-label="Paragraph style" id="wordBlock">
+                  <option value="p">Paragraph</option>
+                  <option value="h1">Title</option>
+                  <option value="h2">Heading</option>
+                  <option value="h3">Subheading</option>
+                </select>
+                <select aria-label="Selection font" id="wordFont">
+                  <option>Arial</option>
+                  <option>Georgia</option>
+                  <option>Verdana</option>
+                  <option>Times New Roman</option>
+                </select>
+                <select aria-label="Selection font size" id="wordSize">
+                  <option value="">Size</option>
+                  <option value="2">10 pt</option>
+                  <option value="3">12 pt</option>
+                  <option value="4">14 pt</option>
+                  <option value="5">18 pt</option>
+                  <option value="6">24 pt</option>
+                  <option value="7">36 pt</option>
+                </select>
+                <button
+                  aria-label="Bold"
+                  class="button quiet icon-button"
+                  data-word-command="bold"
+                  title="Bold"
+                >
+                  <span class="material-symbols-rounded">format_bold</span>
+                </button>
+                <button
+                  aria-label="Italic"
+                  class="button quiet icon-button"
+                  data-word-command="italic"
+                  title="Italic"
+                >
+                  <span class="material-symbols-rounded">format_italic</span>
+                </button>
+                <button
+                  aria-label="Underline"
+                  class="button quiet icon-button"
+                  data-word-command="underline"
+                  title="Underline"
+                >
+                  <span class="material-symbols-rounded">format_underlined</span>
+                </button>
+                <input
+                  aria-label="Selection text color"
+                  id="wordColor"
+                  title="Text color"
+                  type="color"
+                  value="#26323c"
+                />
+                <button
+                  aria-label="Bulleted list"
+                  class="button quiet"
+                  data-word-command="insertUnorderedList"
+                  title="Bulleted list"
+                >
+                  • List
+                </button>
+                <button
+                  aria-label="Numbered list"
+                  class="button quiet"
+                  data-word-command="insertOrderedList"
+                  title="Numbered list"
+                >
+                  1. List
+                </button>
+                <select aria-label="Paragraph alignment" id="wordAlign">
+                  <option value="justifyLeft">Left</option>
+                  <option value="justifyCenter">Center</option>
+                  <option value="justifyRight">Right</option>
+                  <option value="justifyFull">Justify</option>
+                </select>
+                <button
+                  class="button quiet"
+                  data-word-command="removeFormat"
+                  title="Clear selection formatting"
+                >
+                  Clear
+                </button>
+              </div>
+              <div
+                aria-label="Editable resume document"
+                class="preview-body"
+                id="previewBody"
+                tabindex="0"
+              ></div>
+            </section>
+          </div>
+        </div>
+      </main>
+      <div aria-hidden="true" class="hidden">
+        <select aria-label="Workspace layout" class="small-select" id="workspaceView">
+          <option value="all">All panes</option>
+          <option value="json">JSON + document</option>
+          <option value="xml">XML + document</option>
+          <option value="latex">LaTeX + document</option>
+          <option value="output">Document only</option>
+          <option value="xml">XML + document</option>
+        </select>
+      </div>
+      <input
+        accept=".pdf,.docx,.tex,.latex,.md,.markdown,.txt,.json,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/json,text/plain,text/markdown,.zip,application/zip,.xml,.html,.htm,application/xml,text/xml,text/html"
+        class="hidden"
+        id="resumeImportFile"
+        type="file"
+      />
+    </div>
+    <div id="modalRoot"></div>
+    <aside
+      aria-hidden="true"
+      aria-label="Document formatting"
+      class="format-pane hidden"
+      id="formatPane"
+    >
+      <div class="format-pane-head">
+        <strong>Format selection</strong
+        ><button
+          aria-label="Close formatting"
+          class="button quiet icon-button"
+          id="closeFormatPane"
+          title="Close formatting"
+        >
+          <span aria-hidden="true" class="material-symbols-rounded">close</span>
+        </button>
+      </div>
+      <p class="format-target" id="formatTarget">Right-click a document field to format it.</p>
+      <div class="format-grid">
+        <div class="form-field full-width">
+          <label for="fieldRole">Paragraph style</label
+          ><select id="fieldRole">
+            <option value="normal">Normal</option>
+            <option value="title">Title</option>
+            <option value="heading1">Heading 1</option>
+            <option value="heading2">Heading 2</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="fieldFont">Font</label
+          ><select id="fieldFont">
+            <option>Arial</option>
+            <option>Georgia</option>
+            <option>Verdana</option>
+            <option>Times New Roman</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="fieldSize">Size (pt)</label
+          ><input id="fieldSize" max="72" min="6" step="0.5" type="number" value="12" />
+        </div>
+        <div class="form-field">
+          <label for="fieldColor">Text color</label
+          ><input id="fieldColor" type="color" value="#26323c" />
+        </div>
+        <div class="form-field">
+          <label for="fieldHighlight">Highlight</label
+          ><input id="fieldHighlight" type="color" value="#fff1a8" />
+        </div>
+        <div class="form-field">
+          <label for="fieldBorder">Bottom border</label
+          ><select id="fieldBorder">
+            <option value="none">None</option>
+            <option value="solid">Solid</option>
+            <option value="double">Double</option>
+            <option value="dashed">Dashed</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="fieldAlign">Alignment</label
+          ><select id="fieldAlign">
+            <option value="left">Left</option>
+            <option value="center">Center</option>
+            <option value="right">Right</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="fieldLineHeight">Line spacing</label
+          ><select id="fieldLineHeight">
+            <option value="1.2">Tight</option>
+            <option value="1.45">Normal</option>
+            <option value="1.7">Relaxed</option>
+            <option value="2">Double</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="fieldBefore">Space before (pt)</label
+          ><input id="fieldBefore" max="60" min="0" placeholder="Default" step="1" type="number" />
+        </div>
+        <div class="form-field">
+          <label for="fieldAfter">Space after (pt)</label
+          ><input id="fieldAfter" max="60" min="0" placeholder="Default" step="1" type="number" />
+        </div>
+      </div>
+      <div aria-label="Text style" class="format-toggles">
+        <button
+          aria-label="Bold"
+          aria-pressed="false"
+          class="button format-toggle"
+          id="fieldBold"
+          title="Bold"
+        >
+          <span class="material-symbols-rounded">format_bold</span>
+        </button>
+        <button
+          aria-label="Italic"
+          aria-pressed="false"
+          class="button format-toggle"
+          id="fieldItalic"
+          title="Italic"
+        >
+          <span class="material-symbols-rounded">format_italic</span>
+        </button>
+        <button
+          aria-label="Underline"
+          aria-pressed="false"
+          class="button format-toggle"
+          id="fieldUnderline"
+          title="Underline"
+        >
+          <span class="material-symbols-rounded">format_underlined</span>
+        </button>
+      </div>
+      <div class="selection-actions">
+        <button class="button" id="appendBullet">Add bullet</button
+        ><button class="button" id="appendEntry">Add entry</button
+        ><button class="button quiet" id="removeSelection">Delete</button>
+      </div>
+      <div class="format-pane-foot">
+        <button class="button quiet" id="clearFieldFormat">Clear formatting</button
+        ><span class="control-label">Saved in JSON</span>
+      </div>
+    </aside>
+    <div class="toast" id="toast" role="status"></div>
+    <section aria-label="Why JSON" class="why-page hidden" id="whyJsonPage">
+      <header class="why-header">
+        <button class="button" id="whyBackButton">
+          <span aria-hidden="true" class="material-symbols-rounded toolbar-icon">arrow_back</span
+          >Back to studio
+        </button>
+      </header>
+      <main class="why-content">
+        <h1>Why JSON?</h1>
+        <p class="why-lede">
+          JSON and XML keep résumé content easy to edit and reuse. Which works better for this app?
+        </p>
+        <section
+          aria-label="Animated application-form comparison"
+          class="benchmark-player"
+          id="benchmarkPlayer"
+        >
+          <header class="player-heading">
+            <div>
+              <span class="player-eyebrow">Local format comparison</span>
+              <h2>One résumé. JSON and XML.</h2>
+            </div>
+          </header>
+          <div class="player-stage" id="walkthroughStage">
+            <div class="player-caption">
+              <span class="player-chapter" id="walkthroughChapter">1 · Choose files</span>
+              <p id="walkthroughCaption">
+                Press play to compare the same résumé encoded as JSON and XML.
+              </p>
+            </div>
+            <div class="walkthrough-forms" id="walkthroughForms"></div>
+            <div aria-live="polite" class="walkthrough-result" id="walkthroughResult"></div>
+            <button class="walkthrough-start-overlay" id="walkthroughStart">
+              <span aria-hidden="true" class="material-symbols-rounded">play_arrow</span
+              ><strong>Watch the application fill</strong
+              ><span>Measured parsing · illustrative field filling</span>
+            </button>
+          </div>
+          <div class="player-controls">
+            <button
+              aria-label="Play walkthrough"
+              class="button primary player-play"
+              id="walkthroughPlay"
+            >
+              <span aria-hidden="true" class="material-symbols-rounded">play_arrow</span
+              ><span id="walkthroughPlayLabel">Play</span></button
+            ><input
+              aria-label="Walkthrough position"
+              id="walkthroughTimeline"
+              max="6000"
+              min="0"
+              step="1"
+              type="range"
+              value="0"
+            /><span class="player-time" id="walkthroughTime">0:00.0 / 0:06.0</span
+            ><button
+              aria-label="Expand walkthrough"
+              class="button quiet icon-button"
+              id="walkthroughFullscreen"
+              title="Expand walkthrough"
+            >
+              <span aria-hidden="true" class="material-symbols-rounded">fullscreen</span>
+            </button>
+          </div>
+        </section>
+        <p class="why-run-meta" id="benchmarkRunMeta"></p>
+        <p class="why-run-meta">
+          <a href="benchmark/result.json" target="_blank">Saved Node results</a> ·
+          <a download="" href="benchmark/benchmark.cjs">Reproduction script</a>
+        </p>
+        <section aria-label="Run a local document comparison" class="benchmark-upload">
+          <h2>Compare your resume</h2>
+          <div class="benchmark-files">
+            <label
+              >PDF or Word
+              <input
+                accept="application/pdf,.pdf,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                id="benchmarkPdfFile"
+                type="file"
+            /></label>
+            <label
+              >Reference JSON
+              <input accept="application/json,.json" id="benchmarkJsonFile" type="file"
+            /></label>
+          </div>
+          <div class="benchmark-actions">
+            <button class="button primary" disabled="" id="runBenchmarkButton">Compare files</button
+            ><span class="control-label" id="benchmarkFileStatus"
+              >Choose a PDF or Word file and reference JSON</span
+            >
+          </div>
+          <div aria-live="polite" class="benchmark-result" id="benchmarkResult">
+            Choose a document and the JSON containing the same resume details.
+          </div>
+        </section>
+        <footer class="why-footer">
+          <a href="https://tarunb.me" rel="noopener" target="_blank">Tarun B</a
+          ><span aria-hidden="true">·</span
+          ><a href="https://github.com/TarunB-Git/resume-2.0" rel="noopener" target="_blank"
+            >Code on GitHub</a
+          ><span>Apache 2.0</span>
+        </footer>
+      </main>
+    </section>
+
+    <script src="assets/pdf.min.js"></script>
+    <script src="assets/pdf.worker.min.js"></script>
+    <script src="assets/resume-parser.js"></script>
+    <script src="assets/formats.js"></script>
+    <script src="assets/workspace-v2.js"></script>
+    <script src="assets/editor-features.js"></script>
+    <script src="assets/studio.js"></script>
+  </body>
+</html>
