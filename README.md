@@ -2,13 +2,14 @@
 
 A browser-local résumé editor with portable source, direct document editing and complete session backups.
 
-The app runs as a static site. Résumé content stays in the browser; there are no accounts, analytics or upload service.
+Runs as a static site. Documents are stored in the browser; imports and exports run locally.
 
 ## Use it locally
 
-Requires Node.js 22 or later. The app itself has no runtime package dependencies.
+Development requires Node.js 22 or later.
 
 ```sh
+npm ci --ignore-scripts
 npm run check
 npm test
 npm run build
@@ -60,9 +61,9 @@ See [format details](docs/formats.md) and [session restoration](docs/sessions.md
 | `site/assets/workspace-v2.js` | Source draft recovery, responsive controls and gesture zoom |
 | `site/assets/resume-parser.js` | Local text extraction mapping and comparison fields |
 | `tests/` | Data regressions, isolated editor callbacks and browser workflows |
-| `examples/tarun.json` | The only bundled résumé example; all details are fictional |
+| `examples/tarun.json` | Sample résumé |
 
-No framework or backend is required. The pure format module also runs in Node. The build is a reproducible copy of static source rather than a server bundle.
+The format module also runs in Node. The build copies static application files to `dist/`.
 
 ### Checks
 
@@ -84,8 +85,7 @@ npm run test:browser
 
 The comparison uses the downloadable files in `site/benchmark/`. To regenerate its PDF/DOCX fixtures, use `python3 site/benchmark/create-fixtures.py` with `reportlab` and `python-docx` installed, then run `npm run benchmark`. Fixture generation is optional; the static build uses the checked-in files.
 
-The browser suite covers 320, 390, 768, 997 and 1280px in Chromium and WebKit. It is separate from the fast data tests. Real iOS/Android gestures and visual PDF/DOCX review remain manual release checks. Screenshots and exported fixtures go to ignored `artifacts/`. Automated gesture tests establish event handling and scale geometry; they do not establish physical-device behavior.
-
+Browser checks cover 320, 390, 768, 997 and 1280px in Chromium and WebKit. Screenshots and exported files are written to `artifacts/`. Physical trackpad and touchscreen gestures require device testing.
 
 ## Contributing and license
 

@@ -1,11 +1,23 @@
 # Contributing
 
-Use Node.js 22 or later. Start with `npm run check`, `npm test` and `npm run build`. Serve `dist/` with `npm start`.
+Development requires Node.js 22 or later.
 
-For UI changes, install the locked browser test dependency with `npm ci --ignore-scripts`, install Playwright's Chromium/WebKit browsers, then run `npm run test:browser`. Check the affected workflow manually as well. Browser emulation does not replace real touch-device checks.
+```sh
+npm ci --ignore-scripts
+npm run check
+npm test
+npm run build
+```
 
-Keep résumé content local. Use fictional Tarun B data in fixtures, screenshots and bug reports. Do not commit real résumés, session backups, browser profiles, generated artifacts or credentials.
+Browser tests use Playwright:
 
-Preserve compatibility with existing storage keys and embedded source formats. Add regressions for conversion or recovery bugs. Do not claim ATS compatibility or format speed without a stated method and evidence. Keep code comments focused on behavior and constraints.
+```sh
+npx playwright install --with-deps chromium webkit
+npm run test:browser
+```
 
-Describe what changed, why it changed and which checks passed. For export changes, inspect PDF/DOCX appearance and extracted text. Do not remove third-party license notices.
+Use synthetic résumé data for fixtures and screenshots. Personal résumés, session backups, browser profiles and credentials must stay out of commits.
+
+Changes to conversion, session recovery or history need regression coverage. Existing storage keys and embedded restoration formats must remain compatible. Renderer changes also need a visual check of PDF/DOCX output and extracted reading order.
+
+Pull requests should describe the change and its verification. Retain third-party license notices.

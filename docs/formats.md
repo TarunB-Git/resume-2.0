@@ -52,7 +52,7 @@ Imports detect content before relying on the filename. HTML is parsed without ex
 
 The two tabs compare JSON / Word / PDF and XML / Word / PDF. Each uses the same fictional Tarun B content and document copies. The 12 mapped fields include five intentionally empty values; preserving those blanks counts as a match.
 
-Run `npm ci --ignore-scripts` and `npm run benchmark` to refresh the recorded result and the bundled data script. The runner executes only the app's PDF/DOCX reader functions in an isolated Node context, then uses the current local text classifier and field mapper. It never runs the application page or uploads a file. JSON and XML use their structured readers. Embedded restoration data is bypassed when comparing document text.
+Run `npm ci --ignore-scripts` and `npm run benchmark` to refresh the recorded result and the bundled data script. The runner calls the PDF/DOCX readers and field mapper in Node. Files are processed locally. JSON and XML use their structured readers. Embedded restoration data is bypassed when comparing document text.
 
 One in-memory read, extraction, classification and mapping pass is timed per file. File loading from disk, dependency imports and scoring are excluded. Fixed order is JSON, XML, Word, PDF; PDF includes cold worker startup. These are recorded local measurements, not averages, a universal parsing comparison or an ATS score. Playback expands the longest duration to 16 seconds with the same multiplier for all formats. Gradual field filling is illustrative.
 
