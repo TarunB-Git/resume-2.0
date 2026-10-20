@@ -289,3 +289,184 @@ test("Each pane owns its header and Word retains zoom outside PDF page navigatio
   assert.match(css, /\.insert-label\s*\{\s*display: none/);
   assert.ok(!html.includes("mobile-project-links"));
 });
+function eventHub() {
+  const listeners = new Map();
+  return {
+    listeners,
+    addEventListener(name, callback, options) {
+      if (!listeners.has(name)) listeners.set(name, []);
+      listeners.get(name).push({ callback, options });
+    },
+    removeEventListener(name, callback) {
+      listeners.set(
+        name,
+        (listeners.get(name) || []).filter((entry) => entry.callback !== callback),
+      );
+    },
+    emit(name, event) {
+      for (const { callback } of [...(listeners.get(name) || [])]) callback(event);
+    },
+  };
+}
+test("Trackpad events route at document capture across the output pane in PDF and Word", () => {
+  for (const mode of ["pdf", "word"]) {
+    const root = eventHub(),
+      host = eventHub();
+    const page = { mode },
+      toolbar = {},
+      source = {},
+      body = {},
+      html = {};
+    root.body = body;
+    root.documentElement = html;
+    let underPointer = page,
+      scale = 1;
+    root.elementFromPoint = () => underPointer;
+    const scope = { contains: (target) => [page, toolbar].includes(target) };
+    Object.assign(host, {
+      ownerDocument: root,
+      closest: () => scope,
+      isConnected: true,
+      getClientRects: () => [{}],
+    });
+    const c = {};
+    vm.createContext(c);
+    vm.runInContext(between(v2, "function attachPinchZoom(", "function syncViewportHeight("), c);
+    const detach = c.attachPinchZoom(
+      host,
+      () => scale,
+      (value) => (scale = value),
+    );
+    const wheel = (target, deltaY, extra = {}) => {
+      const event = {
+        target,
+        ctrlKey: true,
+        deltaY,
+        clientX: 200,
+        clientY: 300,
+        cancelable: true,
+        prevented: false,
+        preventDefault() {
+          this.prevented = true;
+        },
+        ...extra,
+      };
+      root.emit("wheel", event);
+      return event;
+    };
+    assert.equal(
+      host.listeners.has("wheel"),
+      false,
+      "Trackpad input is not confined to the scroll element",
+    );
+    const options = root.listeners.get("wheel")[0].options;
+    assert.equal(options.capture, true);
+    assert.equal(options.passive, false);
+    assert.equal(wheel(toolbar, -40).prevented, true);
+    assert.ok(scale > 1);
+    const bigger = scale;
+    wheel(page, 80);
+    assert.ok(scale < bigger);
+    const before = scale;
+    assert.equal(wheel(source, -40).prevented, false);
+    assert.equal(wheel(page, -40, { ctrlKey: false }).prevented, false);
+    assert.equal(scale, before);
+    wheel(body, -40); // A browser can retarget the gesture to its root.
+    assert.ok(scale > before);
+    const resumed = scale;
+    underPointer = source;
+    assert.equal(wheel(html, -40).prevented, false);
+    assert.equal(scale, resumed);
+    underPointer = page;
+    wheel(page, -10, { defaultPrevented: true });
+    assert.ok(
+      scale > resumed,
+      "An existing browser default-prevention does not disable document zoom",
+    );
+    host.getClientRects = () => [];
+    const hidden = scale;
+    assert.equal(wheel(page, -40).prevented, false);
+    assert.equal(scale, hidden);
+    detach();
+    assert.ok([...root.listeners.values()].every((entries) => entries.length === 0));
+    assert.ok([...host.listeners.values()].every((entries) => entries.length === 0));
+  }
+});
+test("Root-targeted Safari gestures use the last pointer location and ignore the source pane", () => {
+  const root = eventHub(),
+    host = eventHub(),
+    page = {},
+    source = {};
+  root.body = {};
+  let pointed = page,
+    scale = 1;
+  root.elementFromPoint = () => pointed;
+  Object.assign(host, {
+    ownerDocument: root,
+    closest: () => ({ contains: (node) => node === page }),
+    getClientRects: () => [{}],
+  });
+  const c = {};
+  vm.createContext(c);
+  vm.runInContext(between(v2, "function attachPinchZoom(", "function syncViewportHeight("), c);
+  c.attachPinchZoom(
+    host,
+    () => scale,
+    (value) => (scale = value),
+  );
+  root.emit("mousemove", { clientX: 200, clientY: 300 });
+  const event = (factor) => ({
+    target: root,
+    clientX: 0,
+    clientY: 0,
+    scale: factor,
+    preventDefault() {},
+  });
+  root.emit("gesturestart", event(1));
+  root.emit("gesturechange", event(1.5));
+  assert.equal(scale, 1.5);
+  root.emit("gestureend", event(1.5));
+  pointed = source;
+  root.emit("gesturestart", event(1));
+  root.emit("gesturechange", event(2));
+  assert.equal(scale, 1.5);
+});
+test("PDF preview keeps standard font text paint enabled rather than requesting unavailable glyph paths", async () => {
+  const c = {};
+  vm.createContext(c);
+  vm.runInContext(between(v2, "function pdfPreviewOptions(", "function attachPinchZoom("), c);
+  const pdfjs = require("../site/assets/pdf.min.js");
+  pdfjs.GlobalWorkerOptions.workerSrc = path.join(root, "site/assets/pdf.worker.min.js");
+  const options = c.pdfPreviewOptions(
+    new Uint8Array(fs.readFileSync(path.join(root, "site/benchmark/tarun.pdf"))),
+  );
+  assert.equal(options.disableFontFace, false);
+  assert.equal(options.useSystemFonts, true);
+  assert.equal(options.isEvalSupported, false);
+  assert.match(studio, /pdfjsLib\.getDocument\(pdfPreviewOptions\(bytes\)\)/);
+  const task = pdfjs.getDocument(options);
+  try {
+    const pdf = await task.promise,
+      page = await pdf.getPage(1);
+    const operators = await page.getOperatorList();
+    const fontNames = new Set(
+      operators.fnArray.flatMap((fn, i) =>
+        fn === pdfjs.OPS.setFont ? [operators.argsArray[i][0]] : [],
+      ),
+    );
+    assert.ok(fontNames.size > 0);
+    for (const name of fontNames) {
+      const font = page.commonObjs.get(name);
+      assert.equal(font.disableFontFace, false);
+      assert.equal(
+        font.missingFile,
+        true,
+        "Fixture uses standard PDF fonts without embedded glyph paths",
+      );
+    }
+    const text = await page.getTextContent();
+    assert.ok(text.items.some((item) => item.str.includes("Tarun B")));
+  } finally {
+    await task.destroy();
+  }
+});

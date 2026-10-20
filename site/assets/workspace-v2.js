@@ -259,11 +259,55 @@ function syncZoomControl() {
     select.value = previewZoom;
   }
 }
+function pdfPreviewOptions(data) {
+  // Standard PDF fonts use the browser's text renderer, not unavailable glyph paths.
+  return { data, isEvalSupported: false, useSystemFonts: true, disableFontFace: false };
+}
 function attachPinchZoom(host, getScale, setScale) {
   let touchGesture = null,
     webkitGesture = null,
     lastPoint = null;
   const pointers = new Map();
+  const root = host.ownerDocument || host;
+  const scope = host.closest?.(".right-pane,.pdf-proof") || host;
+  const subscriptions = [];
+  let cursor = null;
+  const listen = (target, name, callback, options) => {
+    target.addEventListener(name, callback, options);
+    subscriptions.push(() => target.removeEventListener?.(name, callback, options));
+  };
+  const eventPoint = (event) => {
+    if (
+      Number.isFinite(event.clientX) &&
+      Number.isFinite(event.clientY) &&
+      (event.clientX !== 0 || event.clientY !== 0 || !cursor)
+    )
+      return { x: event.clientX, y: event.clientY };
+    return cursor;
+  };
+  const belongsToDocument = (event) => {
+    if (host.isConnected === false || host.getClientRects?.().length === 0) return false;
+    // A root-targeted WebKit gesture needs a hit test; ordinary events retain their target.
+    const target = event.target;
+    if (root === host) return true;
+    if (target && target !== root && target !== root.body && target !== root.documentElement)
+      return scope.contains(target);
+    const point = eventPoint(event);
+    return point
+      ? scope.contains(root.elementFromPoint(point.x, point.y))
+      : scope.contains(root.activeElement);
+  };
+  for (const name of ["pointermove", "pointerdown", "mousemove"])
+    listen(
+      root,
+      name,
+      (event) => {
+        if (event.pointerType === "touch") return;
+        if (Number.isFinite(event.clientX) && Number.isFinite(event.clientY))
+          cursor = { x: event.clientX, y: event.clientY };
+      },
+      { capture: true, passive: true },
+    );
   let pointerGesture = null;
   const clamp = (value) => Math.max(0.25, Math.min(3, value));
   const options = { passive: false, capture: true };
@@ -277,13 +321,14 @@ function attachPinchZoom(host, getScale, setScale) {
   const distance = (touches) =>
     Math.hypot(touches[1].clientX - touches[0].clientX, touches[1].clientY - touches[0].clientY);
   const center = (event) => {
-    if (Number.isFinite(event.clientX) && Number.isFinite(event.clientY))
-      return { x: event.clientX, y: event.clientY };
+    const position = eventPoint(event);
+    if (position) return position;
     if (lastPoint) return lastPoint;
     const bounds = host.getBoundingClientRect();
     return { x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2 };
   };
-  host.addEventListener(
+  listen(
+    host,
     "pointerdown",
     (event) => {
       if (event.pointerType !== "touch") return;
@@ -295,7 +340,8 @@ function attachPinchZoom(host, getScale, setScale) {
     },
     options,
   );
-  host.addEventListener(
+  listen(
+    host,
     "pointermove",
     (event) => {
       if (!pointers.has(event.pointerId)) return;
@@ -312,7 +358,8 @@ function attachPinchZoom(host, getScale, setScale) {
     options,
   );
   for (const name of ["pointerup", "pointercancel", "lostpointercapture"])
-    host.addEventListener(
+    listen(
+      host,
       name,
       (event) => {
         pointers.delete(event.pointerId);
@@ -320,7 +367,8 @@ function attachPinchZoom(host, getScale, setScale) {
       },
       options,
     );
-  host.addEventListener(
+  listen(
+    host,
     "touchstart",
     (event) => {
       if (event.touches.length !== 2) return;
@@ -331,7 +379,8 @@ function attachPinchZoom(host, getScale, setScale) {
     },
     options,
   );
-  host.addEventListener(
+  listen(
+    host,
     "touchmove",
     (event) => {
       if (!touchGesture || event.touches.length !== 2) return;
@@ -348,7 +397,8 @@ function attachPinchZoom(host, getScale, setScale) {
     options,
   );
   for (const name of ["touchend", "touchcancel"])
-    host.addEventListener(
+    listen(
+      host,
       name,
       () => {
         touchGesture = null;
@@ -358,19 +408,22 @@ function attachPinchZoom(host, getScale, setScale) {
       options,
     );
   // Safari exposes trackpad pinches as GestureEvents instead of ctrl-wheel.
-  host.addEventListener(
+  listen(
+    root,
     "gesturestart",
     (event) => {
+      if (!belongsToDocument(event)) return;
       consume(event);
       webkitGesture = { scale: getScale(), initial: event.scale || 1 };
     },
     options,
   );
-  host.addEventListener(
+  listen(
+    root,
     "gesturechange",
     (event) => {
-      consume(event);
       if (!webkitGesture) return;
+      consume(event);
       setScale(
         clamp((webkitGesture.scale * (event.scale || 1)) / webkitGesture.initial),
         center(event),
@@ -378,30 +431,35 @@ function attachPinchZoom(host, getScale, setScale) {
     },
     options,
   );
-  host.addEventListener(
+  listen(
+    root,
     "gestureend",
     (event) => {
+      if (!webkitGesture) return;
       consume(event);
       webkitGesture = null;
       touchGesture = null;
     },
     options,
   );
-  host.addEventListener(
+  listen(
+    root,
     "wheel",
     (event) => {
-      if (!event.ctrlKey) return;
+      if (!event.ctrlKey || !belongsToDocument(event)) return;
       consume(event);
       if (webkitGesture) return;
       const unit =
         event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? host.clientHeight || 600 : 1;
-      setScale(clamp(getScale() * Math.exp(-event.deltaY * unit * 0.008)), {
-        x: event.clientX,
-        y: event.clientY,
-      });
+      setScale(clamp(getScale() * Math.exp(-event.deltaY * unit * 0.008)), eventPoint(event));
     },
     options,
   );
+  return () => {
+    subscriptions.forEach((remove) => remove());
+    pointers.clear();
+    touchGesture = webkitGesture = pointerGesture = null;
+  };
 }
 function syncViewportHeight() {
   const viewport = window.visualViewport;

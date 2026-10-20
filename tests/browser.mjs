@@ -103,16 +103,31 @@ async function checkViewport(browser, width) {
     .locator(".preview-pages .resume-paper")
     .first()
     .evaluate((node) => ({ width: node.offsetWidth, height: node.offsetHeight }));
-  await page
-    .locator("#previewBody")
-    .dispatchEvent("wheel", { ctrlKey: true, deltaY: -40, clientX: width / 2, clientY: 400 });
+  await page.locator("#previewBody").hover();
+  await page.keyboard.down("Control");
+  try {
+    await page.mouse.wheel(0, -40);
+  } finally {
+    await page.keyboard.up("Control");
+  }
+  await page.waitForFunction(
+    (before) => Number(document.querySelector("#previewPages").dataset.displayScale) > before,
+    previousZoom,
+  );
   const nextZoom = await page
     .locator("#previewPages")
     .evaluate((node) => Number(node.dataset.displayScale));
   assert.ok(nextZoom > previousZoom && nextZoom <= 3);
-  await page
-    .locator("#previewBody")
-    .dispatchEvent("wheel", { ctrlKey: true, deltaY: 80, clientX: width / 2, clientY: 400 });
+  await page.keyboard.down("Control");
+  try {
+    await page.mouse.wheel(0, 80);
+  } finally {
+    await page.keyboard.up("Control");
+  }
+  await page.waitForFunction(
+    (before) => Number(document.querySelector("#previewPages").dataset.displayScale) < before,
+    nextZoom,
+  );
   const smallerZoom = await page
     .locator("#previewPages")
     .evaluate((node) => Number(node.dataset.displayScale));
@@ -126,6 +141,20 @@ async function checkViewport(browser, width) {
   );
   await page.locator('[data-mode="word"]').click();
   assert.ok(await page.locator("#previewZoom").isVisible());
+  const wordZoom = await page
+    .locator("#previewPages")
+    .evaluate((node) => Number(node.dataset.displayScale));
+  await page.locator("#paperSize").hover();
+  await page.keyboard.down("Control");
+  try {
+    await page.mouse.wheel(0, -40);
+  } finally {
+    await page.keyboard.up("Control");
+  }
+  await page.waitForFunction(
+    (before) => Number(document.querySelector("#previewPages").dataset.displayScale) > before,
+    wordZoom,
+  );
   await page.locator('[data-mode="pdf"]').click();
   if (width <= 900) {
     for (const link of [
@@ -162,6 +191,36 @@ async function checkViewport(browser, width) {
     fullPage: true,
   });
   if (width === 1280) {
+    await page.evaluate(() => {
+      window.proofTextPaints = 0;
+      const original = CanvasRenderingContext2D.prototype.fillText;
+      CanvasRenderingContext2D.prototype.fillText = function (...args) {
+        window.proofTextPaints++;
+        return original.apply(this, args);
+      };
+    });
+    await page.click("#inspectPdfButton");
+    await page.waitForSelector("#proofStack canvas");
+    await page.waitForFunction(() => document.querySelector("#pdfProofStatus").hidden);
+    assert.ok(
+      await page.evaluate(() => window.proofTextPaints > 10),
+      "PDF preview paints text, not just backgrounds",
+    );
+    const proofZoom = await page
+      .locator("#proofStack")
+      .evaluate((node) => Number(node.dataset.displayScale));
+    await page.locator("#pdfProofPages").hover();
+    await page.keyboard.down("Control");
+    try {
+      await page.mouse.wheel(0, -40);
+    } finally {
+      await page.keyboard.up("Control");
+    }
+    await page.waitForFunction(
+      (before) => Number(document.querySelector("#proofStack").dataset.displayScale) > before,
+      proofZoom,
+    );
+    await page.click("#pdfProofClose");
     await page.click("#newFolderButton");
     await page.fill("#nameDialogInput", "Applications");
     await page.click(".name-dialog button[type=submit]");

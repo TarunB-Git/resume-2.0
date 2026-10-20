@@ -2990,7 +2990,7 @@ async function inspectPdf() {
       PAGE.width,
     );
   };
-  attachPinchZoom(
+  const disposePinch = attachPinchZoom(
     host,
     () => documentScale(stack),
     (scale, anchor) => {
@@ -3014,6 +3014,7 @@ async function inspectPdf() {
   const dispose = () => {
     if (cancelled) return;
     cancelled = true;
+    disposePinch();
     rendering?.cancel();
     task?.destroy().catch(() => {});
     resizeObserver.disconnect();
@@ -3054,12 +3055,7 @@ async function inspectPdf() {
     $("#pdfProofStatus").textContent = "Rendering pages…";
     const bytes = new Uint8Array(await blob.arrayBuffer());
     if (cancelled) return;
-    task = pdfjsLib.getDocument({
-      data: bytes,
-      isEvalSupported: false,
-      useSystemFonts: true,
-      disableFontFace: true,
-    });
+    task = pdfjsLib.getDocument(pdfPreviewOptions(bytes));
     const pdf = await task.promise;
     if (cancelled) return;
     count = pdf.numPages;
