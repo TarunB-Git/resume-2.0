@@ -15,6 +15,10 @@ async function checkViewport(browser, width) {
     viewport: { width, height: 905 },
     acceptDownloads: true,
   });
+  // Local checks must not contact analytics services or count as site visits.
+  await context.route("https://static.cloudflareinsights.com/beacon.min.js", (route) =>
+    route.fulfill({ status: 200, contentType: "application/javascript", body: "" }),
+  );
   const page = await context.newPage(),
     errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
