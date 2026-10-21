@@ -2605,7 +2605,7 @@ async function importResumeFile(file) {
     } else if (extension === "html") {
       raw = await file.text();
       parsed = importHtmlResume(raw);
-      notes.push("HTML content imported without running scripts. Review external layouts.");
+      notes.push("HTML content imported. Review the extracted layout.");
     } else if (["tex", "latex"].includes(extension)) {
       raw = await file.text();
       parsed = raw.includes("\\CVField{")
@@ -2703,7 +2703,7 @@ function showRecordedBenchmark() {
     return;
   }
   $("#benchmarkRunMeta").textContent =
-    "Recorded local demonstration using the current import readers and fictional Tarun B files. PDF includes cold worker startup. Field filling is illustrative; this is not an ATS benchmark.";
+    "Recorded local demonstration using the current import readers and fictional Tarun B files. PDF includes cold worker startup. Field filling illustrates the recorded result.";
   $$("[data-comparison-source]").forEach((tab) => {
     tab.onclick = () => {
       comparisonSource = tab.dataset.comparisonSource;
@@ -2845,7 +2845,7 @@ function renderWalkthrough() {
         }</ul></section>`,
     )
     .join("");
-  const markup = `<h3>What needed correcting</h3><div class="comparison-mistakes">${mistakes}</div><p>${comparisonSource.toUpperCase()}: all ${rows[0].total} fields preserved, including ${Object.values(sample.expected).filter((value) => !String(value).trim()).length} empty fields. The highlighted values came from local document text extraction and classification. These results describe this demonstration; they do not predict every ATS.</p>`;
+  const markup = `<h3>What needed correcting</h3><div class="comparison-mistakes">${mistakes}</div><p>${comparisonSource.toUpperCase()}: all ${rows[0].total} fields preserved, including ${Object.values(sample.expected).filter((value) => !String(value).trim()).length} empty fields. The highlighted values came from local document text extraction and classification. These results describe this local demonstration.</p>`;
   if ($("#walkthroughResult").innerHTML !== markup) $("#walkthroughResult").innerHTML = markup;
 }
 function setWalkthroughPlaying(playing) {
@@ -3117,7 +3117,7 @@ async function runLocalFileBenchmark() {
     const correct = known.filter((field) => field.status === "correct").length;
     const needsCorrection = known.length - correct;
     const emptyCount = score.total - known.length;
-    result.innerHTML = `<h3>${known.length ? `${correct} of ${known.length} known resume details matched` : "Your JSON has no details to compare"}</h3><p>${known.length ? `${format === "docx" ? "Word" : "PDF"} filled ${correct} application fields correctly.${needsCorrection ? ` ${needsCorrection} need correction.` : ""}` : "Add your name, contact information and employment details to the reference JSON."} ${emptyCount ? `${emptyCount} blank reference fields were excluded from the score.` : ""}</p>${known.length <= 3 ? `<p class="reference-coverage">Your JSON contains only ${known.length} comparable detail${known.length === 1 ? "" : "s"}. Add the remaining resume information for a useful comparison.</p>` : ""}<div class="benchmark-table-wrap"><table class="benchmark-field-table"><thead><tr><th>Application field</th><th>Filled from ${format === "docx" ? "Word" : "PDF"}</th><th>Your JSON</th><th>Review</th></tr></thead><tbody>${known.map((field) => `<tr><th>${escapeHtml(field.label)}</th><td>${escapeHtml(field.actual || "Not filled")}</td><td>${escapeHtml(field.expected || "Not provided")}</td><td>${!String(field.expected || "").trim() ? "Not scored" : field.status === "correct" ? "Matches" : "Needs correction"}</td></tr>`).join("")}</tbody></table></div><details class="comparison-timing"><summary>Processing details</summary><p>Document: ${elapsed.toFixed(2)} ms. JSON: ${jsonMs.toFixed(2)} ms. These browser timings include different reading costs and are not an ATS speed test. Files were processed in this tab using the current import parser.</p></details>`;
+    result.innerHTML = `<h3>${known.length ? `${correct} of ${known.length} known resume details matched` : "Your JSON has no details to compare"}</h3><p>${known.length ? `${format === "docx" ? "Word" : "PDF"} filled ${correct} application fields correctly.${needsCorrection ? ` ${needsCorrection} need correction.` : ""}` : "Add your name, contact information and employment details to the reference JSON."} ${emptyCount ? `${emptyCount} blank reference fields were excluded from the score.` : ""}</p>${known.length <= 3 ? `<p class="reference-coverage">Your JSON contains only ${known.length} comparable detail${known.length === 1 ? "" : "s"}. Add the remaining resume information for a useful comparison.</p>` : ""}<div class="benchmark-table-wrap"><table class="benchmark-field-table"><thead><tr><th>Application field</th><th>Filled from ${format === "docx" ? "Word" : "PDF"}</th><th>Your JSON</th><th>Review</th></tr></thead><tbody>${known.map((field) => `<tr><th>${escapeHtml(field.label)}</th><td>${escapeHtml(field.actual || "Not filled")}</td><td>${escapeHtml(field.expected || "Not provided")}</td><td>${!String(field.expected || "").trim() ? "Not scored" : field.status === "correct" ? "Matches" : "Needs correction"}</td></tr>`).join("")}</tbody></table></div><details class="comparison-timing"><summary>Processing details</summary><p>Document: ${elapsed.toFixed(2)} ms. JSON: ${jsonMs.toFixed(2)} ms. These browser timings include each format’s reading costs. Files were processed in this tab using the current import parser.</p></details>`;
   } catch (error) {
     result.textContent = error.message || "Comparison failed";
   } finally {

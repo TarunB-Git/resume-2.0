@@ -23,7 +23,7 @@ Open `http://127.0.0.1:4173`. The build copies `site/` to `dist/`, which can be 
 1. Start from the fictional Tarun B sample or import an existing document.
 2. Edit JSON, XML, Markdown or the supported LaTeX fields. Switch to **Document** on a phone.
 3. Edit PDF preview fields directly, or choose **Word** to add paragraphs, remove lines and format text freely. On phones, **Edit** opens and closes the Word formatting row.
-4. Use **Compile** to save a local checkpoint and review changes. This does not invoke a TeX compiler or connect collaborators.
+4. Use **Compile** to save a local checkpoint and review changes.
 5. Export a PDF or DOCX for applications. Export a session ZIP to back up every résumé, source draft, folder and template.
 
 Browser storage belongs to the current origin. Session ZIP files transfer work between origins and devices. Clearing site storage removes the local workspace.
@@ -40,15 +40,15 @@ Browser storage belongs to the current origin. Session ZIP files transfer work b
 - Resizable desktop panes; Source / Document switching and a Files drawer on small screens.
 - Fit width/page and document zoom from 25% to 300%, including pinch and ctrl-wheel gestures.
 
-The Why JSON page has two comparison tabs: JSON / Word / PDF and XML / Word / PDF. Both use the same Tarun B content. Recorded timings come from a local run of the actual document readers and field mapper; they do not measure an ATS.
+The Why JSON page has two comparison tabs: JSON / Word / PDF and XML / Word / PDF. Both use the same Tarun B content. Recorded timings come from a local run of the actual document readers and field mapper.
 
-## Formats and limits
+## Formats
 
-JSON is the default because the app already uses a JSON model and a native JSON reader. XML is equally capable of representing the saved content; the XML adapter adds conversion work and larger markup here. Neither format decides how the résumé looks or guarantees ATS compatibility.
+JSON is the default because the app already uses a JSON model and a native JSON reader. XML is equally capable of representing the saved content; the XML adapter adds conversion work and larger markup here. Templates and document styles control the résumé’s appearance.
 
-External PDF and Word documents can lose ordering, grouping and layout during extraction. Scanned PDFs need OCR, which is not included. LaTeX support edits linked fields and selected styles; it is not a full typesetting engine. The compact PDF writer has limited font coverage; **Print / PDF** uses browser fonts for broader Unicode support.
+Review extracted PDF and Word content before importing it. LaTeX editing supports linked fields and selected styles. **Print / PDF** uses browser fonts for broader Unicode support.
 
-For applications, inspect the exported document, select its text and check reading order. Embedded JSON helps restore this editor's content; ATS readers may ignore it. Keep a simple single-column application layout available alongside designed templates.
+For applications, inspect the exported document, select its text and check reading order. Embedded JSON restores this editor’s content. Keep a simple single-column application layout available alongside designed templates.
 
 See [format details](docs/formats.md) and [session restoration](docs/sessions.md).
 

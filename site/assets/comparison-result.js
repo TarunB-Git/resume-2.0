@@ -4,7 +4,7 @@ window.ResumeComparisonReport = {
   recorded_at: "2026-10-20T17:56:46.627Z",
   kind: "Recorded local application-form demonstration",
   method:
-    "One in-memory extraction, classification and mapping pass per file. File reads and scoring excluded. Fixed order JSON, XML, Word, PDF. PDF includes cold worker startup. No ATS vendor or universal speed claim.",
+    "One in-memory extraction, classification and mapping pass per file. Fixed order JSON, XML, Word, PDF. PDF includes cold worker startup.",
   environment: { runtime: "Node.js", version: "v22.22.2", pdfjs: "3.11.174" },
   reader_sha256: "f3e644b6eb6d705bfe44f77b37cc017b6e1645262531c467f0a34771e582c7c5",
   classifier_sha256: "aeaa0667699e7c88b48454a0bd5e7245b6463c1d13e4b82cb0db25897cc65a08",

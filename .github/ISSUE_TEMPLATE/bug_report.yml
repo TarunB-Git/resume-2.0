@@ -4,7 +4,7 @@ title: '[Bug] '
 body:
   - type: markdown
     attributes:
-      value: Please use fictional content in examples. The app does not attach your résumé or browser details to this report.
+      value: Please use fictional content in examples and include the details needed to reproduce the issue.
   - type: textarea
     id: steps
     attributes:

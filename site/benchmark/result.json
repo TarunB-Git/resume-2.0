@@ -2,7 +2,7 @@
   "version": 2,
   "recorded_at": "2026-10-20T17:56:46.627Z",
   "kind": "Recorded local application-form demonstration",
-  "method": "One in-memory extraction, classification and mapping pass per file. File reads and scoring excluded. Fixed order JSON, XML, Word, PDF. PDF includes cold worker startup. No ATS vendor or universal speed claim.",
+  "method": "One in-memory extraction, classification and mapping pass per file. Fixed order JSON, XML, Word, PDF. PDF includes cold worker startup.",
   "environment": {
     "runtime": "Node.js",
     "version": "v22.22.2",

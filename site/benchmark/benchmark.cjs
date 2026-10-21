@@ -89,7 +89,7 @@ async function main() {
     recorded_at: new Date().toISOString(),
     kind: "Recorded local application-form demonstration",
     method:
-      "One in-memory extraction, classification and mapping pass per file. File reads and scoring excluded. Fixed order JSON, XML, Word, PDF. PDF includes cold worker startup. No ATS vendor or universal speed claim.",
+      "One in-memory extraction, classification and mapping pass per file. Fixed order JSON, XML, Word, PDF. PDF includes cold worker startup.",
     environment: { runtime: "Node.js", version: process.version, pdfjs: pdfjsLib.version },
     reader_sha256: crypto.createHash("sha256").update(readers).digest("hex"),
     classifier_sha256: crypto
