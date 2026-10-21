@@ -37,8 +37,8 @@ async function checkViewport(browser, width) {
       .locator(".compile-actions")
       .evaluate((node) => [...node.children].map((child) => child.getBoundingClientRect().left));
     assert.ok(
-      headerOrder[0] < headerOrder[1] && headerOrder[1] < headerOrder[2],
-      "Compile, help, bug order",
+      headerOrder.every((left, index) => index === 0 || headerOrder[index - 1] < left),
+      "Compile and help stay ordered; Report bug moves into More on mobile",
     );
     for (const id of ["compileButton", "headerImportButton", "exportButton"]) {
       const bounds = await page.locator("#" + id).boundingBox();

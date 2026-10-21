@@ -462,6 +462,8 @@ function syncControls() {
     appearanceStage === "apple"
       ? '<span class="material-symbols-rounded appearance-apple" aria-hidden="true">nutrition</span>'
       : `<span class="material-symbols-rounded" aria-hidden="true">${appearanceStage === "dark" ? "dark_mode" : "light_mode"}</span>`;
+  $("#appearanceCycle").innerHTML +=
+    `<span class="mobile-action-label">${stageLabels[appearanceStage]}</span>`;
   $("#appearanceCycle").setAttribute(
     "aria-label",
     `Appearance: ${stageLabels[appearanceStage]}. Switch to ${stageLabels[nextStage]}`,

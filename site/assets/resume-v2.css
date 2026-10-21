@@ -63,6 +63,9 @@
   order: 2;
   flex: 0 0 auto;
 }
+.secondary-actions #anonymizeButton {
+  order: -1;
+}
 .secondary-actions #appearanceCycle {
   order: 0;
 }
@@ -112,7 +115,10 @@ a.button {
   stroke: none;
 }
 .more-actions,
-.mobile-workspace-bar {
+.mobile-workspace-bar,
+.mobile-menu-title,
+.mobile-menu-icon,
+.mobile-action-label {
   display: none;
 }
 .header-import,
@@ -357,6 +363,9 @@ a.button {
     overflow: hidden;
   }
   .app {
+    position: fixed;
+    top: var(--app-top, 0px);
+    left: 0;
     min-height: 0;
     height: var(--app-height, 100dvh);
     width: 100%;
@@ -368,13 +377,14 @@ a.button {
     padding: 6px 10px;
     gap: 6px;
     flex-wrap: nowrap;
+    justify-content: flex-start;
   }
   .brand {
     font-size: 18px;
     gap: 4px;
   }
   .brand-wrap {
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     gap: 0;
   }
   .desktop-project-links {
@@ -388,7 +398,13 @@ a.button {
     padding: 10px;
   }
   .top-actions {
+    flex: 1 1 auto;
+    min-width: 0;
     gap: 3px;
+    justify-content: flex-start;
+  }
+  .top-actions #moreActionsButton {
+    margin-left: auto;
   }
   .top-actions > .button,
   .top-actions > #compileButton,
@@ -423,7 +439,7 @@ a.button {
     position: fixed;
     z-index: 65;
     right: 10px;
-    top: 62px;
+    top: calc(var(--app-top, 0px) + 62px);
     width: min(300px, calc(100vw - 20px));
     box-sizing: border-box;
     padding: 12px;
@@ -431,19 +447,47 @@ a.button {
     border: 1px solid var(--line);
     border-radius: 12px;
     box-shadow: var(--chrome-shadow);
-    flex-wrap: wrap;
-    max-height: 75dvh;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    max-height: calc(var(--app-height, 100dvh) - 70px);
     overflow: auto;
   }
   .secondary-actions.is-open {
     display: flex;
   }
   .secondary-actions .button {
-    display: inline-flex !important;
+    display: flex !important;
+    width: 100%;
     min-height: 44px;
-    min-width: 44px;
+    min-width: 0;
+    padding: 10px 12px;
+    gap: 12px;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
+    text-align: left;
+  }
+  .secondary-actions .mobile-action-label,
+  .secondary-actions .mobile-menu-icon {
+    display: inline;
+  }
+  .secondary-actions .mobile-menu-title {
+    order: -2;
+    display: block;
+    padding: 4px 12px 8px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .secondary-actions #reportBugButton {
+    order: 3;
+    width: 100%;
+  }
+  .secondary-actions .material-symbols-rounded,
+  .secondary-actions svg {
+    flex: 0 0 20px;
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
   }
 
   .compile-actions .compile-guide {
@@ -455,7 +499,7 @@ a.button {
   }
   .compile-actions .compile-guide-popover {
     position: fixed;
-    top: 120px;
+    top: calc(var(--app-top, 0px) + 62px);
     right: 20px;
     left: auto;
     max-width: calc(100vw - 40px);
@@ -520,9 +564,27 @@ a.button {
     min-width: 0;
     padding: 7px 10px;
   }
+  .output-controls {
+    display: flex;
+    align-items: stretch;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+    overscroll-behavior-x: contain;
+    border-bottom: 1px solid var(--line);
+  }
   .document-topbar {
-    padding: 8px;
-    gap: 8px;
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    min-width: max-content;
+    min-height: 52px;
+    padding: 4px;
+    gap: 4px;
+    border-bottom: 0;
+  }
+  .document-topbar > *,
+  .document-primary-controls > * {
+    flex-shrink: 0;
   }
 
   .document-primary-controls .mode-tab,
@@ -587,9 +649,13 @@ a.button {
     padding: 4px;
   }
   .document-toolbar {
+    flex: 0 0 auto;
+    min-width: max-content;
     min-height: 52px;
     padding: 4px;
     gap: 4px;
+    overflow: visible;
+    border-bottom: 0;
   }
   .document-edit-actions > .button {
     display: none;
@@ -632,6 +698,24 @@ a.button {
     min-height: 0;
     padding: 12px 8px 24px;
     overscroll-behavior: contain;
+    overflow-anchor: none;
+    scroll-padding: 16px;
+  }
+  .code-layer,
+  #jsonEditor,
+  #latexEditor,
+  #xmlEditor,
+  #markdownInput,
+  .line-numbers {
+    font-size: 16px;
+    line-height: 1.8;
+  }
+  #pageNumber,
+  .document-primary-controls select,
+  .word-toolbar select,
+  .document-edit-popover input,
+  .document-edit-popover select {
+    font-size: 16px;
   }
   .word-toolbar {
     padding: 5px 7px;
@@ -860,35 +944,28 @@ a.button {
 }
 @media (max-width: 600px) {
   .topbar {
-    position: relative;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 44px;
-    grid-template-rows: 44px 44px;
-    height: auto;
-    min-height: 100px;
-    padding: 6px 8px;
-    gap: 4px;
-  }
-  .brand-wrap {
-    grid-column: 1;
-    grid-row: 1;
-  }
-  .top-actions {
-    grid-column: 1/-1;
-    grid-row: 2;
-    box-sizing: border-box;
-    width: 100%;
-    justify-content: center;
-    gap: 12px;
-  }
-  .compile-actions {
-    gap: 12px;
+    display: flex;
+    flex-wrap: nowrap;
+    height: 56px;
+    min-height: 56px;
+    padding: 6px;
+    gap: 0;
   }
   .topbar .brand {
-    font-size: 18px;
+    display: none;
   }
   .brand-wrap {
-    gap: 8px;
+    flex: 0 0 auto;
+    gap: 0;
+  }
+  .top-actions {
+    width: auto;
+    flex: 1 1 auto;
+    justify-content: flex-start;
+    gap: 0;
+  }
+  .compile-actions {
+    gap: 0;
   }
   .mobile-workspace-bar {
     gap: 4px;
@@ -905,16 +982,9 @@ a.button {
     flex: 0 0 44px;
   }
 
-  .top-actions #moreActionsButton {
-    position: absolute;
-    top: 6px;
-    right: 8px;
-  }
-  .secondary-actions {
-    top: 54px;
-  }
+  .secondary-actions,
   .compile-actions .compile-guide-popover {
-    top: 104px;
+    top: calc(var(--app-top, 0px) + 58px);
   }
 }
 
@@ -945,8 +1015,8 @@ a.button {
     height: 44px;
   }
   .secondary-actions #appearanceCycle {
-    width: 44px;
-    min-width: 44px;
+    width: 100%;
+    min-width: 0;
   }
   .secondary-actions {
     max-height: calc(var(--app-height, 100dvh) - 70px);
@@ -995,4 +1065,16 @@ a.button {
 }
 .insert-options[popover]:popover-open {
   display: flex;
+}
+
+.document-edit-popover[popover] {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  max-width: calc(100vw - 16px);
+  max-height: calc(var(--app-height, 100dvh) - 24px);
+  overflow: auto;
+}
+.document-edit-popover[popover]:not(:popover-open) {
+  display: none;
 }

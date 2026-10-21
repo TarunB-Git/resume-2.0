@@ -32,6 +32,7 @@ Browser storage belongs to the current origin. Session ZIP files transfer work b
 
 - JSON as the saved model, with a versioned XML view and JSON Resume adapters.
 - Shared Undo/Redo across source editors and document editing.
+- An anonymize action creates a separate résumé tab with generic names, organizations, schools and contact details. Replacements run locally; free text still needs review before sharing.
 - Recovery of invalid source drafts while retaining the last valid preview.
 - PDF, DOCX, JSON, XML, JSON Resume, LaTeX, Markdown, HTML and text export; ZIP exports the whole workspace.
 - Import review for external documents; exact embedded source recovery from this app's PDF, DOCX and HTML exports.

@@ -3,7 +3,10 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    <meta
+      content="width=device-width, initial-scale=1, interactive-widget=resizes-content"
+      name="viewport"
+    />
     <meta content="#f8fafd" name="theme-color" />
     <title>Résumé 2.0</title>
     <link href="favicon.svg" rel="icon" type="image/svg+xml" />
@@ -51,6 +54,16 @@
         </div>
         <div class="top-actions">
           <div class="secondary-actions" id="secondaryActions">
+            <div class="mobile-menu-title">Résumé 2.0</div>
+            <button
+              class="button quiet icon-button"
+              id="anonymizeButton"
+              aria-label="Create an anonymized résumé copy"
+              title="Create an anonymized résumé copy"
+            >
+              <span aria-hidden="true" class="material-symbols-rounded">person_off</span
+              ><span class="mobile-action-label">Anonymize résumé</span>
+            </button>
             <button
               aria-label="Appearance: Apple light. Switch to Material light"
               class="button quiet icon-button"
@@ -63,8 +76,14 @@
               id="editTemplateButton"
               title="Browse, create or import resume templates"
             >
-              Templates</button
-            ><button class="button quiet" id="whyJsonButton">Why JSON?</button>
+              <span aria-hidden="true" class="material-symbols-rounded mobile-menu-icon"
+                >palette</span
+              ><span>Templates</span></button
+            ><button class="button quiet" id="whyJsonButton">
+              <span aria-hidden="true" class="material-symbols-rounded mobile-menu-icon"
+                >data_object</span
+              ><span>Why JSON?</span>
+            </button>
           </div>
           <span aria-live="polite" class="build-state visually-hidden" id="buildState"></span>
           <div aria-label="Compile and support" class="compile-actions" role="group">
@@ -112,7 +131,8 @@
                   d="M9 3 7 1M15 3l2-2M5 9H2m3 5H2m3 5H2m17-10h3m-3 5h3m-3 5h3M9 7h6m-7 4h8m-4 0v9M8 7V6a4 4 0 0 1 8 0v1"
                 ></path>
                 <rect height="15" rx="7" width="14" x="5" y="7"></rect></svg
-            ></a>
+              ><span class="mobile-action-label">Report a bug</span></a
+            >
           </div>
           <button
             aria-label="Import résumé or session"
@@ -554,7 +574,7 @@
                       <summary class="button quiet">
                         <span aria-hidden="true" class="material-symbols-rounded">edit</span> Edit
                       </summary>
-                      <div class="document-edit-popover">
+                      <div class="document-edit-popover" id="documentStylePopover" popover="manual">
                         <div class="edit-menu-title">Document style</div>
                         <label class="edit-menu-field"
                           ><span>Font</span
@@ -655,81 +675,81 @@
                     </button>
                   </div>
                 </div>
-              </div>
-              <div class="document-toolbar">
-                <div class="document-edit-actions">
-                  <button
-                    aria-label="Undo document edit"
-                    class="button quiet icon-button"
-                    disabled=""
-                    id="undoDocument"
-                    title="Undo document edit"
-                  >
-                    <span aria-hidden="true" class="material-symbols-rounded">undo</span></button
-                  ><button
-                    aria-label="Redo document edit"
-                    class="button quiet icon-button"
-                    disabled=""
-                    id="redoDocument"
-                    title="Redo document edit"
-                  >
-                    <span aria-hidden="true" class="material-symbols-rounded">redo</span>
-                  </button>
-                  <div class="insert-menu">
+                <div class="document-toolbar">
+                  <div class="document-edit-actions">
                     <button
-                      aria-label="Insert résumé content"
-                      title="Insert résumé content"
-                      class="button quiet"
-                      id="insertButton"
-                      popovertarget="insertOptions"
+                      aria-label="Undo document edit"
+                      class="button quiet icon-button"
+                      disabled=""
+                      id="undoDocument"
+                      title="Undo document edit"
                     >
-                      <span aria-hidden="true" class="material-symbols-rounded">add</span
-                      ><span class="insert-label">Insert</span>
+                      <span aria-hidden="true" class="material-symbols-rounded">undo</span></button
+                    ><button
+                      aria-label="Redo document edit"
+                      class="button quiet icon-button"
+                      disabled=""
+                      id="redoDocument"
+                      title="Redo document edit"
+                    >
+                      <span aria-hidden="true" class="material-symbols-rounded">redo</span>
                     </button>
-                    <div class="insert-options" id="insertOptions" popover="auto">
-                      <button class="button quiet preview-tool" id="addSectionButton">
-                        <span aria-hidden="true" class="material-symbols-rounded toolbar-icon"
-                          >add</span
-                        >Section</button
-                      ><button class="button quiet preview-tool" id="addLinkButton">
-                        <span aria-hidden="true" class="material-symbols-rounded toolbar-icon"
-                          >insert_link</span
-                        >Link
+                    <div class="insert-menu">
+                      <button
+                        aria-label="Insert résumé content"
+                        title="Insert résumé content"
+                        class="button quiet"
+                        id="insertButton"
+                        popovertarget="insertOptions"
+                      >
+                        <span aria-hidden="true" class="material-symbols-rounded">add</span
+                        ><span class="insert-label">Insert</span>
                       </button>
+                      <div class="insert-options" id="insertOptions" popover="auto">
+                        <button class="button quiet preview-tool" id="addSectionButton">
+                          <span aria-hidden="true" class="material-symbols-rounded toolbar-icon"
+                            >add</span
+                          >Section</button
+                        ><button class="button quiet preview-tool" id="addLinkButton">
+                          <span aria-hidden="true" class="material-symbols-rounded toolbar-icon"
+                            >insert_link</span
+                          >Link
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div class="document-view-actions">
-                  <div
-                    aria-label="Document page navigation"
-                    class="page-navigator"
-                    id="pageNavigator"
-                  >
-                    <button aria-label="Previous page" id="previousPage">
-                      <span class="material-symbols-rounded">chevron_left</span></button
-                    ><input
-                      aria-label="Current page"
-                      class="page-number"
-                      id="pageNumber"
-                      min="1"
-                      type="number"
-                      value="1"
-                    /><span class="page-total" id="pageTotal">/ 1</span
-                    ><button aria-label="Next page" id="nextPage">
-                      <span class="material-symbols-rounded">chevron_right</span>
-                    </button>
+                  <div class="document-view-actions">
+                    <div
+                      aria-label="Document page navigation"
+                      class="page-navigator"
+                      id="pageNavigator"
+                    >
+                      <button aria-label="Previous page" id="previousPage">
+                        <span class="material-symbols-rounded">chevron_left</span></button
+                      ><input
+                        aria-label="Current page"
+                        class="page-number"
+                        id="pageNumber"
+                        min="1"
+                        type="number"
+                        value="1"
+                      /><span class="page-total" id="pageTotal">/ 1</span
+                      ><button aria-label="Next page" id="nextPage">
+                        <span class="material-symbols-rounded">chevron_right</span>
+                      </button>
+                    </div>
+                    <select aria-label="Preview zoom" class="zoom-select" id="previewZoom">
+                      <option value="fit">Fit width</option>
+                      <option value="page">Fit page</option>
+                      <option value="0.75">75%</option>
+                      <option selected="" value="1">100%</option>
+                      <option value="1.25">125%</option>
+                      <option value="1.5">150%</option>
+                      <option value="2">200%</option>
+                    </select>
                   </div>
-                  <select aria-label="Preview zoom" class="zoom-select" id="previewZoom">
-                    <option value="fit">Fit width</option>
-                    <option value="page">Fit page</option>
-                    <option value="0.75">75%</option>
-                    <option selected="" value="1">100%</option>
-                    <option value="1.25">125%</option>
-                    <option value="1.5">150%</option>
-                    <option value="2">200%</option>
-                  </select>
+                  <span id="documentStats">A4</span>
                 </div>
-                <span id="documentStats">A4</span>
               </div>
               <div
                 aria-label="Word formatting"
@@ -1101,6 +1121,7 @@
     <script src="assets/pdf.worker.min.js"></script>
     <script src="assets/resume-parser.js"></script>
     <script src="assets/formats.js"></script>
+    <script src="assets/anonymize.js"></script>
     <script src="assets/workspace-v2.js"></script>
     <script src="assets/editor-features.js"></script>
     <script src="assets/comparison-result.js"></script>

@@ -469,11 +469,64 @@ function attachPinchZoom(host, getScale, setScale) {
 }
 function syncViewportHeight() {
   const viewport = window.visualViewport;
-  if (viewport && viewport.scale !== 1) return;
+  if (viewport && viewport.scale !== 1) {
+    const focused = document.activeElement;
+    if (focused?.isContentEditable || focused?.matches("textarea,input")) {
+      // Keep browser zoom intact while allowing the keyboard to reduce layout height.
+      document.documentElement.style.setProperty(
+        "--app-height",
+        Math.round(Math.min(window.innerHeight, viewport.height * viewport.scale)) + "px",
+      );
+    }
+    return;
+  }
   document.documentElement.style.setProperty(
     "--app-height",
     Math.round(viewport?.height || window.innerHeight) + "px",
   );
+  if (Number.isFinite(viewport?.offsetTop)) {
+    document.documentElement.style.setProperty(
+      "--app-top",
+      Math.max(0, Math.round(viewport.offsetTop)) + "px",
+    );
+  }
+}
+function createAnonymizedResume() {
+  saveWordDocument();
+  if (sourceDraftError()) {
+    toast("Correct the source draft before creating an anonymized copy.");
+    return;
+  }
+  persistResume();
+  const original = workspace.resumes.find((item) => item.id === activeResumeId);
+  const data = ResumePrivacy.anonymize(resume);
+  const id = makeWorkspaceId("resume");
+  let name = "Anonymized résumé",
+    suffix = 2;
+  while (workspace.resumes.some((item) => item.name === name))
+    name = "Anonymized résumé " + suffix++;
+  workspace.resumes.push({
+    id,
+    name,
+    nameAuto: false,
+    folderId: original?.folderId || workspace.folders[0]?.id,
+    data,
+  });
+  workspace.openIds.push(id);
+  switchResume(id);
+  toast("Anonymized copy created · review free text before sharing.");
+}
+function positionWorkspacePopover(popover, anchor) {
+  const viewport = window.visualViewport;
+  const left = viewport?.offsetLeft || 0;
+  const top = viewport?.offsetTop || 0;
+  const width = viewport?.width || window.innerWidth;
+  const height = viewport?.height || window.innerHeight;
+  const bounds = anchor.getBoundingClientRect();
+  popover.style.left =
+    Math.max(left + 8, Math.min(bounds.left, left + width - popover.offsetWidth - 8)) + "px";
+  popover.style.top =
+    Math.max(top + 8, Math.min(bounds.bottom + 6, top + height - popover.offsetHeight - 8)) + "px";
 }
 function showMobilePane(pane) {
   mobilePane = pane;
@@ -485,8 +538,16 @@ function showMobilePane(pane) {
 }
 function initializeWorkspaceV2() {
   syncViewportHeight();
-  window.addEventListener("resize", syncViewportHeight);
-  window.visualViewport?.addEventListener("resize", syncViewportHeight);
+  let viewportFrame = 0;
+  const queueViewportSync = () => {
+    cancelAnimationFrame(viewportFrame);
+    viewportFrame = requestAnimationFrame(syncViewportHeight);
+  };
+  window.addEventListener("resize", queueViewportSync);
+  window.visualViewport?.addEventListener("resize", queueViewportSync);
+  window.visualViewport?.addEventListener("scroll", queueViewportSync);
+  document.addEventListener("focusin", queueViewportSync);
+  document.addEventListener("focusout", queueViewportSync);
   syncZoomControl();
   // Word paragraphs can grow without replacing the page stack.
   $("#previewBody").addEventListener("input", () => requestAnimationFrame(fitPreview));
@@ -497,17 +558,32 @@ function initializeWorkspaceV2() {
       toast("Correct the source draft before editing the document.");
     }
   });
-  const insertPopover = $("#insertOptions");
-  insertPopover.addEventListener("beforetoggle", (event) => {
-    if (event.newState !== "open") return;
-    const bounds = $("#insertButton").getBoundingClientRect();
-    insertPopover.style.left = Math.max(8, Math.min(bounds.left, window.innerWidth - 186)) + "px";
-    insertPopover.style.top = Math.min(bounds.bottom + 6, window.innerHeight - 120) + "px";
+  const styleMenu = $(".document-edit-menu");
+  const stylePopover = $("#documentStylePopover");
+  const styleAnchor = styleMenu.querySelector("summary");
+  styleMenu.addEventListener("toggle", () => {
+    if (styleMenu.open) {
+      if (!stylePopover.matches(":popover-open")) stylePopover.showPopover();
+      positionWorkspacePopover(stylePopover, styleAnchor);
+    } else if (stylePopover.matches(":popover-open")) stylePopover.hidePopover();
   });
+  const insertPopover = $("#insertOptions");
+  insertPopover.addEventListener("toggle", (event) => {
+    if (event.newState === "open") positionWorkspacePopover(insertPopover, $("#insertButton"));
+  });
+  $("#outputControls").addEventListener(
+    "scroll",
+    () => {
+      styleMenu.open = false;
+      if (insertPopover.matches(":popover-open")) insertPopover.hidePopover();
+    },
+    { passive: true },
+  );
   insertPopover.addEventListener("click", (event) => {
     if (event.target.closest("button")) insertPopover.hidePopover();
   });
   $("#headerImportButton").onclick = () => $("#importResumeButton").click();
+  $("#anonymizeButton").onclick = createAnonymizedResume;
   $("#mobileFilesButton").onclick = () => togglePanel("files");
   $("#mobileSourceButton").onclick = () => showMobilePane("source");
   $("#mobileDocumentButton").onclick = () => showMobilePane("document");
@@ -515,24 +591,42 @@ function initializeWorkspaceV2() {
   $("#mobileRedoButton").onclick = () => restoreHistory(1);
   for (const id of ["mobileUndoButton", "mobileRedoButton"])
     $("#" + id).onmousedown = (event) => event.preventDefault();
+  const closeMoreActions = () => {
+    $("#secondaryActions").classList.remove("is-open");
+    $("#moreActionsButton").setAttribute("aria-expanded", "false");
+  };
   $("#moreActionsButton").onclick = () => {
     const open = $("#secondaryActions").classList.toggle("is-open");
     $("#moreActionsButton").setAttribute("aria-expanded", String(open));
+    if (open) $("#secondaryActions").querySelector("button,a").focus();
   };
+  $("#secondaryActions").addEventListener("click", (event) => {
+    if (event.target.closest("button,a") && !event.target.closest("#appearanceCycle"))
+      closeMoreActions();
+  });
   document.addEventListener("click", (event) => {
     if (!event.target.closest("#secondaryActions,#moreActionsButton")) {
-      $("#secondaryActions").classList.remove("is-open");
-      $("#moreActionsButton").setAttribute("aria-expanded", "false");
+      closeMoreActions();
     }
   });
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
-      $("#secondaryActions").classList.remove("is-open");
-      $("#moreActionsButton").setAttribute("aria-expanded", "false");
+      const wasOpen = $("#secondaryActions").classList.contains("is-open");
+      closeMoreActions();
+      if (wasOpen) $("#moreActionsButton").focus();
     }
   });
   const media = window.matchMedia("(max-width: 900px)");
+  const reportButton = $("#reportBugButton");
+  const reportHome = reportButton.parentElement;
+  const syncCompactHeader = () => {
+    (media.matches ? $("#secondaryActions") : reportHome).appendChild(reportButton);
+    closeMoreActions();
+    styleMenu.open = false;
+  };
+  syncCompactHeader();
   media.addEventListener("change", () => {
+    syncCompactHeader();
     renderPanelOrder();
     syncFilesPanel();
   });
