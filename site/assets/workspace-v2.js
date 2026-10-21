@@ -120,11 +120,12 @@ function exportV2Format(format, stem) {
       "application/json",
       (data) => JSON.stringify(ResumeFormats.toJsonResume(data), null, 2),
     ],
+    html: ["text/html", () => documentHtmlExport()],
     text: ["text/plain", () => plainDocumentText()],
   };
   if (!types[format]) return false;
   const [type, convert] = types[format],
-    extension = { xml: "xml", "json-resume": "jsonresume.json", text: "txt" }[format];
+    extension = { xml: "xml", "json-resume": "jsonresume.json", html: "html", text: "txt" }[format];
   download(new Blob([convert(resume)], { type: type + ";charset=utf-8" }), stem + "." + extension);
   toast("Document exported");
   return true;

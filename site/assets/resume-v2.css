@@ -133,6 +133,7 @@ a.button {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-start;
   gap: 6px 10px;
   min-height: 44px;
   height: auto;
@@ -159,7 +160,7 @@ a.button {
   min-width: 0;
   max-width: 100%;
   gap: 2px;
-  margin: 0 0 0 auto;
+  margin: 0;
 }
 .document-topbar .layout-choice {
   min-width: 0;
@@ -169,13 +170,15 @@ a.button {
 .layout-short-label {
   display: none;
 }
-@container (max-width: 450px) {
+@container (max-width: 640px) {
   .layout-full-label {
     display: none;
   }
   .layout-short-label {
     display: inline;
   }
+}
+@container (max-width: 450px) {
   .document-topbar #inspectPdfButton .action-label {
     display: none;
   }
@@ -243,9 +246,6 @@ a.button {
   justify-content: flex-start;
   gap: 4px;
   margin: 0;
-}
-.document-view-actions {
-  margin-left: auto;
 }
 .document-toolbar #documentStats {
   flex: 0 0 auto;

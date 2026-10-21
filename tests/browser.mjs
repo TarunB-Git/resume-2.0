@@ -10,54 +10,6 @@ const server = createServer(0);
 await new Promise((resolve) => (server.listening ? resolve() : server.once("listening", resolve)));
 const origin = "http://127.0.0.1:" + server.address().port;
 const results = [];
-async function checkPortableDocument(context, content, browserName) {
-  const reader = await context.newPage(),
-    errors = [],
-    requests = [];
-  reader.on("pageerror", (error) => errors.push(error.message));
-  reader.on("request", (request) => {
-    if (/^https?:/.test(request.url())) requests.push(request.url());
-  });
-  try {
-    await reader.setContent(content);
-    const expected = await reader.locator("#resume-data").textContent();
-    assert.equal(JSON.parse(expected).basics.name, "Tarun B");
-    for (const width of [320, 1280]) {
-      await reader.setViewportSize({ width, height: 905 });
-      await reader.click("#human-tab");
-      await reader
-        .frameLocator("#human-frame")
-        .getByRole("heading", { name: "Tarun B", exact: true })
-        .waitFor();
-      assert.equal(
-        await reader.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1),
-        true,
-      );
-      await reader.click("#json-tab");
-      assert.deepEqual(
-        JSON.parse(await reader.locator("#json-content").textContent()),
-        JSON.parse(expected),
-      );
-      await reader.selectOption("#reader-theme", "dark");
-      assert.equal(await reader.locator("html").getAttribute("data-theme"), "dark");
-      await reader.screenshot({
-        path: path.join(artifacts, `portable-${browserName}-${width}.png`),
-      });
-    }
-    const downloadPromise = reader.waitForEvent("download");
-    await reader.click("#download-json");
-    const download = await downloadPromise;
-    const filename = path.join(artifacts, "portable-" + browserName + ".json");
-    await download.saveAs(filename);
-    assert.deepEqual(JSON.parse(await readFile(filename, "utf8")), JSON.parse(expected));
-    await reader.click("#pdf-tab");
-    assert.match(await reader.locator("#pdf-frame").getAttribute("src"), /^blob:/);
-    assert.deepEqual(requests, [], "Portable reader makes no HTTP requests");
-    assert.deepEqual(errors, []);
-  } finally {
-    await reader.close();
-  }
-}
 async function checkViewport(browser, width) {
   const context = await browser.newContext({
     viewport: { width, height: 905 },
@@ -302,12 +254,6 @@ async function checkViewport(browser, width) {
         const filename = path.join(artifacts, download.suggestedFilename());
         await download.saveAs(filename);
         assert.ok((await readFile(filename)).length > 0);
-        if (format === "html")
-          await checkPortableDocument(
-            context,
-            await readFile(filename, "utf8"),
-            browser.browserType().name(),
-          );
         await page.setInputFiles("#resumeImportFile", filename);
         if (format === "zip") {
           await page.waitForSelector("#confirmSessionImport");

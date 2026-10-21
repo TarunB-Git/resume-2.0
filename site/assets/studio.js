@@ -2387,18 +2387,11 @@ async function extractTextFromPdf(file, restoreSource = true) {
     const attachments = restoreSource ? await pdf.getAttachments() : null;
     const attached =
       attachments &&
-      Object.values(attachments).find((item) =>
-        ["resume20-source.json", "forma-resume.json"].includes(item.filename),
-      );
-    const standard =
-      attachments && Object.values(attachments).find((item) => item.filename === "resume.json");
-    for (const item of [attached, standard].filter(Boolean)) {
+      Object.values(attachments).find((item) => item.filename === "forma-resume.json");
+    if (attached) {
       try {
-        const value = JSON.parse(new TextDecoder().decode(item.content));
-        if (value && typeof value === "object" && !Array.isArray(value)) {
-          resumeData = item === standard ? ResumeFormats.fromJsonResume(value) : value;
-          break;
-        }
+        const value = JSON.parse(new TextDecoder().decode(attached.content));
+        if (value && typeof value === "object" && !Array.isArray(value)) resumeData = value;
       } catch {}
     }
     return {
@@ -4048,14 +4041,78 @@ function pdfBuildPages() {
 }
 
 function makePdf(streams = pdfBuildPages()) {
-  const data = ResumePdf.create({
-    streams,
-    width: PAGE.pdfWidth,
-    height: PAGE.pdfHeight,
-    model: resume,
-    jsonResume: ResumeFormats.toJsonResume(resume),
+  const objects = [];
+  const add = (body) => {
+    objects.push(body);
+    return objects.length;
+  };
+  const catalogId = add("");
+  const pagesId = add("");
+  const fontDefs = [
+    ["HR", "Helvetica"],
+    ["HB", "Helvetica-Bold"],
+    ["HI", "Helvetica-Oblique"],
+    ["HBI", "Helvetica-BoldOblique"],
+    ["TR", "Times-Roman"],
+    ["TB", "Times-Bold"],
+    ["TI", "Times-Italic"],
+    ["TBI", "Times-BoldItalic"],
+  ];
+  const fontIds = {};
+  for (const [key, name] of fontDefs)
+    fontIds[key] = add(
+      `<< /Type /Font /Subtype /Type1 /BaseFont /${name} /Encoding /WinAnsiEncoding >>`,
+    );
+  const pageIds = [];
+  streams.forEach((stream) => {
+    const streamId = add(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
+    const pageId = add("");
+    const fontMap = Object.entries(fontIds)
+      .map(([key, id]) => `/${key} ${id} 0 R`)
+      .join(" ");
+    objects[pageId - 1] =
+      `<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${PAGE.pdfWidth} ${PAGE.pdfHeight}] /Resources << /Font << ${fontMap} >> >> /Contents ${streamId} 0 R >>`;
+    const annotationIds = (streams.annotations?.[pageIds.length] || []).map((link) =>
+      add(
+        "<< /Type /Annot /Subtype /Link /Rect [" +
+          link.rect.map((value) => Number(value).toFixed(2)).join(" ") +
+          "] /Border [0 0 0] /A << /S /URI /URI " +
+          pdfBytes(link.url) +
+          " >> >>",
+      ),
+    );
+    if (annotationIds.length)
+      objects[pageId - 1] = objects[pageId - 1].replace(
+        "/Contents ",
+        "/Annots [" + annotationIds.map((id) => id + " 0 R").join(" ") + "] /Contents ",
+      );
+    pageIds.push(pageId);
   });
-  return new Blob([data], { type: "application/pdf" });
+  const sourceJson = JSON.stringify(resume).replace(
+    /[\u007f-\uffff]/g,
+    (char) => "\\u" + char.charCodeAt(0).toString(16).padStart(4, "0"),
+  );
+  const embeddedId = add(
+    `<< /Type /EmbeddedFile /Subtype /application#2Fjson /Length ${sourceJson.length} >>\nstream\n${sourceJson}\nendstream`,
+  );
+  const fileId = add(`<< /Type /Filespec /F (forma-resume.json) /EF << /F ${embeddedId} 0 R >> >>`);
+  objects[catalogId - 1] =
+    `<< /Type /Catalog /Pages ${pagesId} 0 R /Names << /EmbeddedFiles << /Names [(forma-resume.json) ${fileId} 0 R] >> >> >>`;
+  objects[pagesId - 1] =
+    `<< /Type /Pages /Kids [${pageIds.map((id) => `${id} 0 R`).join(" ")}] /Count ${pageIds.length} >>`;
+  let pdf = "%PDF-1.4\n%Résumé 2.0\n";
+  const offsets = [0];
+  objects.forEach((body, index) => {
+    offsets.push(pdf.length);
+    pdf += `${index + 1} 0 obj\n${body}\nendobj\n`;
+  });
+  const xref = pdf.length;
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  offsets.slice(1).forEach((offset) => {
+    pdf += `${String(offset).padStart(10, "0")} 00000 n \n`;
+  });
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xref}\n%%EOF`;
+  return new Blob([new TextEncoder().encode(pdf)], { type: "application/pdf" });
 }
 
 function xmlEscape(value) {
@@ -4337,16 +4394,6 @@ async function exportFormat(format) {
   }
   if (document.activeElement === latexEditor) updateFromLatex(latexEditor.value);
   const stem = safeFilename();
-  if (format === "html") {
-    const snapshot = portableDocumentSnapshot();
-    const pdf = new Uint8Array(await makePdf().arrayBuffer());
-    download(
-      new Blob([portableDocumentExport(pdf, snapshot)], { type: "text/html;charset=utf-8" }),
-      `${stem}.resume.html`,
-    );
-    toast("Portable résumé downloaded");
-    return;
-  }
   if (exportV2Format(format, stem)) return;
   if (format === "latex") {
     download(new Blob([latexSource()], { type: "application/x-tex;charset=utf-8" }), `${stem}.tex`);

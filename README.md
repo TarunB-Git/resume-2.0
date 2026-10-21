@@ -24,7 +24,7 @@ Open `http://127.0.0.1:4173`. The build copies `site/` to `dist/`, which can be 
 2. Edit JSON, XML, Markdown or the supported LaTeX fields. Switch to **Document** on a phone.
 3. Edit PDF preview fields directly, or choose **Word** to add paragraphs, remove lines and format text freely.
 4. Use **Compile** to save a local checkpoint and review changes. This does not invoke a TeX compiler or connect collaborators.
-5. Export a PDF or DOCX for applications, or **Portable résumé** for a single offline file with Human, PDF and JSON views. Export a session ZIP to back up every résumé, source draft, folder and template.
+5. Export a PDF or DOCX for applications. Export a session ZIP to back up every résumé, source draft, folder and template.
 
 Browser storage belongs to the current origin. Session ZIP files transfer work between origins and devices. Clearing site storage removes the local workspace.
 
@@ -34,29 +34,12 @@ Browser storage belongs to the current origin. Session ZIP files transfer work b
 - Shared Undo/Redo across source editors and document editing.
 - Recovery of invalid source drafts while retaining the last valid preview.
 - PDF, DOCX, JSON, XML, JSON Resume, LaTeX, Markdown, HTML and text export; ZIP exports the whole workspace.
-- A self-contained HTML résumé with human presentation, embedded PDF, JSON Resume data and reader themes.
 - Import review for external documents; exact embedded source recovery from this app's PDF, DOCX and HTML exports.
 - Files and folders, drag-and-drop imports, a Move to folder menu, reusable templates and local checkpoints.
 - Resizable desktop panes; Source / Document switching and a Files drawer on small screens.
 - Fit width/page and document zoom from 25% to 300%, including pinch and ctrl-wheel gestures.
 
 The Why JSON page has two comparison tabs: JSON / Word / PDF and XML / Word / PDF. Both use the same Tarun B content. Recorded timings come from a local run of the actual document readers and field mapper; they do not measure an ATS.
-
-## Portable document
-
-**Export → Portable résumé** downloads a `.resume.html` file. Open it in a browser to switch between the résumé, a fixed PDF and its JSON data. PDF and JSON downloads work offline. The reader has system, light and dark themes; these change the interface while preserving the authored résumé design.
-
-A compatible machine reader extracts the JSON directly from an inert data block. It does not need OCR, text classification or JavaScript execution:
-
-```sh
-node scripts/read-resume.mjs tarun-b.resume.html > resume.json
-node scripts/read-resume.mjs tarun-b.pdf > resume.json
-node scripts/read-resume.mjs tarun-b.resume.html --source > editable-source.json
-```
-
-PDF exports carry `resume.json` and `resume20-source.json` as associated files. Importing the portable HTML or PDF restores this editor's source. Older PDFs with `forma-resume.json` remain supported.
-
-This combines a presentation and structured data in one file. Readers must support the data contract to use it; an arbitrary ATS may reject HTML or ignore PDF attachments. Ordinary PDF text extraction still returns résumé text. The portable file contains no analytics or external dependencies. Its PDF tab uses the browser's PDF viewer; browsers without one can use Download PDF.
 
 ## Formats and limits
 
@@ -74,9 +57,6 @@ See [format details](docs/formats.md) and [session restoration](docs/sessions.md
 | --- | --- |
 | `site/assets/studio.js` | Workspace, rendering, import and export orchestration |
 | `site/assets/editor-features.js` | Rich document editing, history, checkpoints and archives |
-| `site/assets/portable-resume.js` | Self-contained Human / PDF / JSON document and structured reader |
-| `site/assets/pdf-container.js` | PDF objects, byte offsets and associated JSON files |
-| `scripts/read-resume.mjs` | Machine extraction from portable HTML, PDF attachments and JSON |
 | `site/assets/formats.js` | Portable XML, JSON Resume, session merge and format measurements |
 | `site/assets/workspace-v2.js` | Source draft recovery, responsive controls and gesture zoom |
 | `site/assets/resume-parser.js` | Local text extraction mapping and comparison fields |
@@ -105,7 +85,7 @@ npm run test:browser
 
 The comparison uses the downloadable files in `site/benchmark/`. To regenerate its PDF/DOCX fixtures, use `python3 site/benchmark/create-fixtures.py` with `reportlab` and `python-docx` installed, then run `npm run benchmark`. Fixture generation is optional; the static build uses the checked-in files.
 
-Browser checks cover 320, 390, 768, 997 and 1280px in Chromium and WebKit. Screenshots and exported files are written to `artifacts/`. The portable reader also has isolated mode-switching tests and extraction tests against PDF.js. Browser workflows include its tabs, downloads, mobile width and import restoration. Physical trackpad and touchscreen gestures require device testing.
+Browser checks cover 320, 390, 768, 997 and 1280px in Chromium and WebKit. Screenshots and exported files are written to `artifacts/`. Physical trackpad and touchscreen gestures require device testing.
 
 ## Contributing and license
 
