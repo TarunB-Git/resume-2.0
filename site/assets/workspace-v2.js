@@ -1,5 +1,6 @@
 /* Source adapters, session recovery and touch-aware workspace controls. */
 let mobilePane = "document";
+let mobileWordFormattingOpen = false;
 const sourceState = {
   xmlCommitted: "",
   xmlError: null,
@@ -499,12 +500,42 @@ function createAnonymizedResume() {
   }
   persistResume();
   const original = workspace.resumes.find((item) => item.id === activeResumeId);
-  const data = ResumePrivacy.anonymize(resume);
+  const sourceTemplate = customTemplates.find((item) => item.id === resume.template);
+  let data, copiedTemplate;
+  try {
+    const copy = ResumePrivacy.createCopy(resume, sourceTemplate || null);
+    data = ResumeFormats.assertModel(copy.data);
+    if (sourceTemplate) {
+      const templateId = makeWorkspaceId("custom");
+      const base =
+        BUILTIN_TEMPLATES.find((item) => item.id === sourceTemplate.base) || BUILTIN_TEMPLATES[0];
+      data.template = templateId;
+      copiedTemplate = {
+        id: templateId,
+        name: "Anonymized template",
+        base: base.id,
+        variant: BUILTIN_TEMPLATES.some((item) => item.id === sourceTemplate.variant)
+          ? sourceTemplate.variant
+          : base.id,
+        format: deepClone(data.format || {}),
+        layout: deepClone(data.layout || {}),
+        css: sanitizeTemplateCss(copy.template.css || ""),
+        seed: deepClone(data),
+      };
+    }
+  } catch (error) {
+    toast("Could not create an anonymized copy: " + error.message);
+    return;
+  }
   const id = makeWorkspaceId("resume");
   let name = "Anonymized résumé",
     suffix = 2;
   while (workspace.resumes.some((item) => item.name === name))
     name = "Anonymized résumé " + suffix++;
+  if (copiedTemplate) {
+    customTemplates.push(copiedTemplate);
+    persistTemplates();
+  }
   workspace.resumes.push({
     id,
     name,
@@ -527,6 +558,16 @@ function positionWorkspacePopover(popover, anchor) {
     Math.max(left + 8, Math.min(bounds.left, left + width - popover.offsetWidth - 8)) + "px";
   popover.style.top =
     Math.max(top + 8, Math.min(bounds.bottom + 6, top + height - popover.offsetHeight - 8)) + "px";
+}
+function syncWordToolbar() {
+  const mobile = isCompactLayout();
+  const visible = activeMode === "word" && (!mobile || mobileWordFormattingOpen);
+  $("#wordToolbar").classList.toggle("hidden", !visible);
+  const toggle = $("#toggleWordToolbar");
+  toggle.classList.toggle("hidden", !mobile || activeMode !== "word");
+  toggle.setAttribute("aria-expanded", String(visible));
+  toggle.setAttribute("aria-label", visible ? "Hide Word formatting" : "Show Word formatting");
+  toggle.title = visible ? "Hide Word formatting" : "Show Word formatting";
 }
 function showMobilePane(pane) {
   mobilePane = pane;
@@ -558,14 +599,16 @@ function initializeWorkspaceV2() {
       toast("Correct the source draft before editing the document.");
     }
   });
-  const styleMenu = $(".document-edit-menu");
-  const stylePopover = $("#documentStylePopover");
-  const styleAnchor = styleMenu.querySelector("summary");
-  styleMenu.addEventListener("toggle", () => {
-    if (styleMenu.open) {
-      if (!stylePopover.matches(":popover-open")) stylePopover.showPopover();
-      positionWorkspacePopover(stylePopover, styleAnchor);
-    } else if (stylePopover.matches(":popover-open")) stylePopover.hidePopover();
+  $("#toggleWordToolbar").addEventListener("mousedown", (event) => event.preventDefault());
+  $("#toggleWordToolbar").onclick = () => {
+    mobileWordFormattingOpen = !mobileWordFormattingOpen;
+    syncWordToolbar();
+    requestAnimationFrame(fitPreview);
+  };
+  const compileGuide = $(".compile-guide");
+  compileGuide.addEventListener("toggle", () => {
+    if (compileGuide.open && isCompactLayout())
+      positionWorkspacePopover($("#compileHint"), compileGuide.querySelector("summary"));
   });
   const insertPopover = $("#insertOptions");
   insertPopover.addEventListener("toggle", (event) => {
@@ -574,7 +617,6 @@ function initializeWorkspaceV2() {
   $("#outputControls").addEventListener(
     "scroll",
     () => {
-      styleMenu.open = false;
       if (insertPopover.matches(":popover-open")) insertPopover.hidePopover();
     },
     { passive: true },
@@ -598,7 +640,10 @@ function initializeWorkspaceV2() {
   $("#moreActionsButton").onclick = () => {
     const open = $("#secondaryActions").classList.toggle("is-open");
     $("#moreActionsButton").setAttribute("aria-expanded", String(open));
-    if (open) $("#secondaryActions").querySelector("button,a").focus();
+    if (open) {
+      positionWorkspacePopover($("#secondaryActions"), $("#moreActionsButton"));
+      $("#secondaryActions").querySelector("button,a").focus();
+    }
   };
   $("#secondaryActions").addEventListener("click", (event) => {
     if (event.target.closest("button,a") && !event.target.closest("#appearanceCycle"))
@@ -622,11 +667,15 @@ function initializeWorkspaceV2() {
   const syncCompactHeader = () => {
     (media.matches ? $("#secondaryActions") : reportHome).appendChild(reportButton);
     closeMoreActions();
-    styleMenu.open = false;
+    compileGuide.open = false;
+    $("#compileHint").style.removeProperty("left");
+    $("#compileHint").style.removeProperty("top");
   };
+  window.addEventListener("resize", closeMoreActions);
   syncCompactHeader();
   media.addEventListener("change", () => {
     syncCompactHeader();
+    syncWordToolbar();
     renderPanelOrder();
     syncFilesPanel();
   });

@@ -22,7 +22,7 @@ Open `http://127.0.0.1:4173`. The build copies `site/` to `dist/`, which can be 
 
 1. Start from the fictional Tarun B sample or import an existing document.
 2. Edit JSON, XML, Markdown or the supported LaTeX fields. Switch to **Document** on a phone.
-3. Edit PDF preview fields directly, or choose **Word** to add paragraphs, remove lines and format text freely.
+3. Edit PDF preview fields directly, or choose **Word** to add paragraphs, remove lines and format text freely. On phones, **Edit** opens and closes the Word formatting row.
 4. Use **Compile** to save a local checkpoint and review changes. This does not invoke a TeX compiler or connect collaborators.
 5. Export a PDF or DOCX for applications. Export a session ZIP to back up every résumé, source draft, folder and template.
 
@@ -32,7 +32,7 @@ Browser storage belongs to the current origin. Session ZIP files transfer work b
 
 - JSON as the saved model, with a versioned XML view and JSON Resume adapters.
 - Shared Undo/Redo across source editors and document editing.
-- An anonymize action creates a separate résumé tab with generic names, organizations, schools and contact details. Replacements run locally; free text still needs review before sharing.
+- An anonymize action creates a separate résumé tab with generic names, organizations, schools and contact details. Dates, metrics and formatting are retained; custom templates are copied independently. Replacements run locally; free text still needs review before sharing.
 - Recovery of invalid source drafts while retaining the last valid preview.
 - PDF, DOCX, JSON, XML, JSON Resume, LaTeX, Markdown, HTML and text export; ZIP exports the whole workspace.
 - Import review for external documents; exact embedded source recovery from this app's PDF, DOCX and HTML exports.

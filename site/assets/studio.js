@@ -320,9 +320,6 @@ function switchResume(id) {
   if (!item) return;
   if (!workspace.openIds.includes(id)) workspace.openIds.push(id);
   workspace.activeId = id;
-  templateEditMode = false;
-  templateEditId = "";
-  $("#templateEditMode").setAttribute("aria-pressed", "false");
   compiledArtifacts = null;
   activeResumeId = id;
   resume = deepClone(item.data);
@@ -406,7 +403,6 @@ function createResume() {
 let pendingImportOptions = null;
 
 function persistResume() {
-  persistEditingTemplate();
   updateBuildState();
   safeStorageSet(RESUME_STORAGE_KEY, JSON.stringify(resume));
   const item = workspace.resumes.find((record) => record.id === activeResumeId);
@@ -449,11 +445,6 @@ function effectiveTemplateId(template) {
 }
 function syncControls() {
   syncPaperSize();
-  $("#fontSelect").value = resume.format?.font || "Arial";
-  $("#accentColor").value = /^#[0-9a-f]{6}$/i.test(resume.format?.accent || "")
-    ? resume.format.accent
-    : "#496f91";
-  $("#bulletSelect").value = resume.format?.bullet || "disc";
   document.documentElement.style.setProperty("--accent", resume.format?.accent || "#496f91");
   const stages = ["apple", "light", "dark"];
   const stageLabels = { light: "Material light", apple: "Apple light", dark: "Dark" };
@@ -684,8 +675,6 @@ let activeInput = ["json", "xml", "latex", "markdown"].includes(workspace.inputM
   ? workspace.inputMode
   : "json";
 let workspaceView = activeInput;
-let templateEditMode = false;
-let templateEditId = "";
 let sourceFirst = workspace.sourceFirst !== false;
 let panelWeights = {
   json: 30,
@@ -1378,7 +1367,7 @@ function buildPreviewPages() {
 }
 
 function renderOutput() {
-  $("#wordToolbar").classList.toggle("hidden", activeMode !== "word");
+  syncWordToolbar();
   $("#pageNavigator").classList.toggle("hidden", activeMode === "word");
   if (activeMode === "word") {
     renderWordOutput();
@@ -2670,9 +2659,6 @@ function showImportReview(parsed, raw, filename, notes) {
       const data = ResumeFormats.assertModel(JSON.parse($("#importReviewJson").value));
       if (!data || typeof data !== "object" || Array.isArray(data))
         throw new Error("Use a JSON object");
-      templateEditMode = false;
-      templateEditId = "";
-      $("#templateEditMode").setAttribute("aria-pressed", "false");
       if (asNew) {
         const id = makeWorkspaceId("resume");
         workspace.resumes.push({
@@ -4779,9 +4765,6 @@ $("#markdownInput").addEventListener("blur", () => {
 $("#fieldRole").addEventListener("change", (event) => saveFieldStyle("role", event.target.value));
 $("#compileButton").addEventListener("click", () => compileJson());
 function applyTemplate(selected) {
-  templateEditMode = false;
-  templateEditId = "";
-  $("#templateEditMode").setAttribute("aria-pressed", "false");
   const custom = customTemplates.find((item) => item.id === selected);
   resume.template = selected;
   const preset = custom || templateById(selected);
@@ -4798,18 +4781,6 @@ $("#paperSize").addEventListener("change", (event) => {
   resume.layout = { ...(resume.layout || {}), paperSize: event.target.value };
   previewPage = 1;
   syncPaperSize();
-  updateDocumentStatus();
-});
-$("#fontSelect").addEventListener("change", (event) => {
-  resume.format = { ...(resume.format || {}), font: event.target.value };
-  updateDocumentStatus();
-});
-$("#accentColor").addEventListener("input", (event) => {
-  resume.format = { ...(resume.format || {}), accent: event.target.value };
-  updateDocumentStatus();
-});
-$("#bulletSelect").addEventListener("change", (event) => {
-  resume.format = { ...(resume.format || {}), bullet: event.target.value };
   updateDocumentStatus();
 });
 $("#editTemplateButton").addEventListener("click", showTemplateModal);
@@ -4981,15 +4952,6 @@ $$(".mode-tab").forEach((button) =>
     renderOutput();
   }),
 );
-$("#resetButton").addEventListener("click", () => {
-  resume = deepClone(initialData);
-  resetV2SourceState();
-  latestJsonError = null;
-  updateDocumentStatus();
-  syncControls();
-  toast("Example resume restored");
-});
-
 window.addEventListener("keydown", (event) => {
   if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
     event.preventDefault();
@@ -5050,47 +5012,6 @@ function updateBuildState() {
         ? "Changes since last checkpoint"
         : "No changes since last checkpoint";
 }
-function persistEditingTemplate() {
-  if (!templateEditMode || templateEditId !== resume.template) return;
-  const record = customTemplates.find((item) => item.id === templateEditId);
-  if (!record) return;
-  record.format = deepClone(resume.format || {});
-  record.layout = deepClone(resume.layout || {});
-  record.seed = deepClone(resume);
-  persistTemplates();
-}
-$("#templateEditMode").addEventListener("click", () => {
-  if (templateEditMode) {
-    templateEditMode = false;
-    templateEditId = "";
-    $("#templateEditMode").setAttribute("aria-pressed", "false");
-    toast("Template saved · resume editing resumed");
-    return;
-  }
-  let record = customTemplates.find((item) => item.id === resume.template);
-  if (!record) {
-    const base = templateById(resume.template);
-    record = {
-      id: makeWorkspaceId("custom"),
-      name: base.name + " Personal",
-      base: base.base || base.id,
-      variant: base.id,
-      css: "",
-      format: deepClone(resume.format || {}),
-      layout: deepClone(resume.layout || {}),
-      seed: deepClone(resume),
-    };
-    customTemplates.push(record);
-    resume.template = record.id;
-  }
-  templateEditMode = true;
-  templateEditId = record.id;
-  persistTemplates();
-  $("#templateEditMode").setAttribute("aria-pressed", "true");
-  updateDocumentStatus();
-  syncControls();
-  toast(`Editing ${record.name} permanently · content and formatting save automatically`);
-});
 let outlineDrag = "";
 $("#sectionOutline").addEventListener("dragstart", (event) => {
   outlineDrag = event.target.closest("[data-outline-key]")?.dataset.outlineKey || "";
@@ -5249,12 +5170,8 @@ setWhyPage(location.hash === "#why-json");
 
 activateInput(latestJsonError ? "json" : activeInput, Boolean(latestJsonError));
 
-$("#swapPanesButton").onclick = () => {
-  sourceFirst = !sourceFirst;
-  renderPanelOrder();
-};
 document.addEventListener("click", (event) => {
-  $$(".document-edit-menu[open],.compile-guide[open]").forEach((menu) => {
+  $$(".compile-guide[open]").forEach((menu) => {
     if (!menu.contains(event.target) || event.target.closest(".insert-options button"))
       menu.open = false;
   });
@@ -5282,7 +5199,7 @@ window.addEventListener("keydown", (event) => {
       $("#modalRoot").replaceChildren();
       event.preventDefault();
     }
-    $$(".document-edit-menu[open],.compile-guide[open]").forEach((menu) => (menu.open = false));
+    $$(".compile-guide[open]").forEach((menu) => (menu.open = false));
     $("#exportMenu").classList.add("hidden");
     $("#exportMenuToggle").setAttribute("aria-expanded", "false");
   }
@@ -5351,19 +5268,6 @@ $$("[data-wrap-source]").forEach(
       syncSourceWrap();
     }),
 );
-let lastDocumentFieldPath = "";
-$("#previewBody").addEventListener("focusin", (event) => {
-  const field = event.target.closest("[data-path]");
-  if (field) lastDocumentFieldPath = field.dataset.path;
-});
-$("#formatSelectionButton").onclick = () => {
-  const field =
-    lastDocumentFieldPath &&
-    $(`[data-path="${CSS.escape(lastDocumentFieldPath)}"]`, $("#previewBody"));
-  if (!field) return toast("Select text in the resume first");
-  showFormatPane(field);
-  $(".document-edit-menu").open = false;
-};
 for (const eventName of ["wheel", "touchstart", "pointerdown", "keydown"]) {
   $("#walkthroughForms").addEventListener(
     eventName,

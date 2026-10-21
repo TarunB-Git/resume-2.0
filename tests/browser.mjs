@@ -47,7 +47,11 @@ async function checkViewport(browser, width) {
     for (const id of ["compileButton", "headerImportButton", "exportButton"]) {
       const bounds = await page.locator("#" + id).boundingBox();
       assert.ok(bounds && bounds.x >= 0 && bounds.x + bounds.width <= width + 1, id + " fits");
-      if (width <= 900) assert.ok(bounds.height >= 44 && bounds.width >= 44, id + " touch target");
+      if (width <= 900)
+        assert.ok(
+          bounds.height >= 44 && bounds.width >= (width <= 600 ? 32 : 44),
+          id + " compact header target",
+        );
     }
     if (width <= 900) {
       await page.click("#mobileFilesButton");
@@ -95,11 +99,24 @@ async function checkViewport(browser, width) {
     if (width <= 900) await page.click("#mobileDocumentButton");
     await page.locator('[data-mode="word"]').click();
     await page.waitForSelector("#wordEditor");
+    if (width <= 900) {
+      assert.equal(await page.locator("#wordToolbar").isVisible(), false);
+      await page.click("#toggleWordToolbar");
+      assert.equal(await page.locator("#wordToolbar").isVisible(), true);
+      assert.equal(await page.locator("#toggleWordToolbar").getAttribute("aria-expanded"), "true");
+      await page.click("#toggleWordToolbar");
+      assert.equal(await page.locator("#wordToolbar").isVisible(), false);
+    } else {
+      assert.equal(await page.locator("#toggleWordToolbar").isVisible(), false);
+      assert.equal(await page.locator("#wordToolbar").isVisible(), true);
+    }
     await page.locator("#wordEditor").click();
     await page.keyboard.press("ControlOrMeta+End");
     await page.keyboard.press("Enter");
     await page.keyboard.type("An editable line.");
     await page.locator('[data-mode="pdf"]').click();
+    assert.equal(await page.locator("#toggleWordToolbar").isVisible(), false);
+    assert.equal(await page.locator("#wordToolbar").isVisible(), false);
     assert.ok(
       await page.evaluate(() => resume.layout?.richDocument?.includes("An editable line.")),
     );

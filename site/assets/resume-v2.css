@@ -98,7 +98,8 @@
 a.button {
   text-decoration: none;
 }
-.icon-button svg {
+.icon-button svg,
+.mobile-menu-icon {
   width: 19px;
   height: 19px;
   fill: none;
@@ -118,7 +119,8 @@ a.button {
 .mobile-workspace-bar,
 .mobile-menu-title,
 .mobile-menu-icon,
-.mobile-action-label {
+.mobile-action-label,
+.mobile-word-edit {
   display: none;
 }
 .header-import,
@@ -153,8 +155,7 @@ a.button {
 .document-primary-controls {
   display: contents;
 }
-.document-topbar .button,
-.document-topbar summary {
+.document-topbar .button {
   min-height: 30px;
   padding: 4px 8px;
   font-size: 11px;
@@ -385,7 +386,7 @@ a.button {
   }
   .brand-wrap {
     flex: 0 0 auto;
-    gap: 0;
+    gap: 8px;
   }
   .desktop-project-links {
     display: flex;
@@ -398,13 +399,14 @@ a.button {
     padding: 10px;
   }
   .top-actions {
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     min-width: 0;
+    margin-left: 0;
     gap: 3px;
     justify-content: flex-start;
   }
   .top-actions #moreActionsButton {
-    margin-left: auto;
+    margin-left: 0;
   }
   .top-actions > .button,
   .top-actions > #compileButton,
@@ -587,9 +589,11 @@ a.button {
     flex-shrink: 0;
   }
 
+  .mobile-word-edit {
+    display: inline-flex;
+  }
   .document-primary-controls .mode-tab,
   .document-primary-controls .button,
-  .document-primary-controls summary,
   .document-primary-controls select {
     min-height: 44px;
     min-width: 44px;
@@ -712,9 +716,7 @@ a.button {
   }
   #pageNumber,
   .document-primary-controls select,
-  .word-toolbar select,
-  .document-edit-popover input,
-  .document-edit-popover select {
+  .word-toolbar select {
     font-size: 16px;
   }
   .word-toolbar {
@@ -902,16 +904,41 @@ a.button {
 }
 @media (max-width: 900px) {
   .compile-actions {
-    gap: 2px;
+    position: relative;
+    flex: 0 0 44px;
+    width: 44px;
+    gap: 0;
   }
   .compile-actions #compileButton,
-  .compile-actions #reportBugButton,
-  .compile-actions .compile-guide-summary {
+  .compile-actions #reportBugButton {
     width: 44px;
     min-width: 44px;
     height: 44px;
     min-height: 44px;
     padding: 8px;
+  }
+  .compile-actions #compileButton .material-symbols-rounded {
+    transform: translateX(-3px);
+  }
+  .compile-actions .compile-guide {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 20px;
+    height: 20px;
+  }
+  .compile-actions .compile-guide-summary {
+    width: 20px;
+    min-width: 20px;
+    height: 20px;
+    min-height: 20px;
+    padding: 0;
+    border: 1px solid var(--ui-primary);
+    border-radius: 50%;
+    background: var(--ui-surface);
+    color: var(--ui-primary);
+    font-size: 11px;
+    line-height: 1;
   }
   .document-primary-controls #inspectPdfButton {
     width: 44px;
@@ -952,17 +979,32 @@ a.button {
     gap: 0;
   }
   .topbar .brand {
-    display: none;
+    display: flex;
+    flex: 0 0 auto;
+    font-size: 16px;
+    gap: 3px;
+    white-space: nowrap;
   }
   .brand-wrap {
     flex: 0 0 auto;
-    gap: 0;
+    gap: 8px;
   }
   .top-actions {
     width: auto;
-    flex: 1 1 auto;
+    flex: 0 0 auto;
+    margin-left: 0;
     justify-content: flex-start;
     gap: 0;
+  }
+  .desktop-project-links .icon-button,
+  .top-actions #headerImportButton,
+  .top-actions #exportButton,
+  .top-actions #moreActionsButton {
+    width: 32px;
+    min-width: 32px;
+    height: 44px;
+    min-height: 44px;
+    padding: 6px;
   }
   .compile-actions {
     gap: 0;
@@ -985,6 +1027,12 @@ a.button {
   .secondary-actions,
   .compile-actions .compile-guide-popover {
     top: calc(var(--app-top, 0px) + 58px);
+  }
+}
+
+@media (max-width: 360px) {
+  .topbar .brand {
+    font-size: 15px;
   }
 }
 
@@ -1025,11 +1073,6 @@ a.button {
     min-width: 44px;
     min-height: 44px;
   }
-  .document-edit-popover input,
-  .document-edit-popover select {
-    min-height: 44px;
-    min-width: 44px;
-  }
 }
 
 /* The scroll surface follows display scale without changing document layout. */
@@ -1065,16 +1108,4 @@ a.button {
 }
 .insert-options[popover]:popover-open {
   display: flex;
-}
-
-.document-edit-popover[popover] {
-  position: fixed;
-  inset: auto;
-  margin: 0;
-  max-width: calc(100vw - 16px);
-  max-height: calc(var(--app-height, 100dvh) - 24px);
-  overflow: auto;
-}
-.document-edit-popover[popover]:not(:popover-open) {
-  display: none;
 }

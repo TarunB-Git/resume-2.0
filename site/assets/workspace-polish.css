@@ -637,72 +637,6 @@ select {
 #allPagesButton {
   margin-left: 0;
 }
-.document-edit-menu {
-  position: relative;
-}
-.document-edit-menu summary {
-  list-style: none;
-}
-.document-edit-menu summary::-webkit-details-marker {
-  display: none;
-}
-.document-edit-menu .material-symbols-rounded {
-  font-size: 16px;
-}
-.document-edit-popover {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  z-index: 50;
-  width: 260px;
-  padding: 14px;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  background: var(--ui-surface);
-  color: var(--ink);
-  box-shadow: var(--chrome-shadow);
-  display: grid;
-  gap: 8px;
-}
-.edit-menu-title {
-  font-weight: 500;
-  font-size: 12px;
-  padding-bottom: 4px;
-}
-.edit-menu-field {
-  display: grid;
-  grid-template-columns: 55px minmax(0, 1fr);
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: var(--ui-muted);
-}
-.edit-menu-field select {
-  width: 100%;
-  max-width: none;
-  min-height: 32px;
-  font-size: 12px;
-  padding: 5px 26px 5px 9px;
-}
-.edit-menu-field input[type="color"] {
-  width: 100%;
-  height: 32px;
-  padding: 3px 4px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--ui-surface);
-}
-.edit-menu-divider {
-  height: 1px;
-  background: var(--line);
-  margin: 4px 0;
-}
-.document-edit-popover .button {
-  justify-content: flex-start;
-  padding: 7px 9px;
-  min-height: 32px;
-  font-size: 12px;
-}
 .preview-body {
   padding: 12px 12px 24px;
   background: #e5e9ef;
@@ -1408,12 +1342,6 @@ select {
     padding: 4px 5px;
   }
 
-  .document-edit-popover {
-    position: fixed;
-    left: 42px;
-    top: 110px;
-    width: min(270px, calc(100vw - 55px));
-  }
   .why-content {
     padding: 24px 16px 40px;
   }
@@ -1643,9 +1571,6 @@ select {
   }
   .top-actions {
     gap: 2px;
-  }
-  .document-edit-popover {
-    top: 155px;
   }
 }
 @media (max-width: 380px) {

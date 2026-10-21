@@ -1808,14 +1808,6 @@ body.dark-mode {
 .build-state.stale {
   color: #a27436;
 }
-#resetButton {
-  font-size: 11px;
-}
-#templateEditMode[aria-pressed="true"] {
-  background: #edf5ef;
-  color: #37754d;
-  border-color: #bcd5c4;
-}
 .main {
   padding: 10px;
   gap: 0;
@@ -2470,10 +2462,6 @@ body {
 }
 .settings-menu .control-label {
   color: var(--ui-muted);
-}
-#templateEditMode[aria-pressed="true"] {
-  background: var(--ui-selected);
-  color: var(--ui-primary);
 }
 .resume-tabs {
   background: var(--canvas);
