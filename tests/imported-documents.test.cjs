@@ -19,6 +19,7 @@ function importReviewContext() {
       },
     },
     "#importReviewJson": { closest: () => dialog },
+    "#importReviewError": { hidden: true, textContent: "" },
     "#newImport": { disabled: false },
     "#replaceImport": { disabled: false },
     "#cancelImport": { disabled: false },
@@ -257,7 +258,12 @@ test("Incomplete original-file restoration rolls back installed files", async ()
 
 test("PDF extraction follows line geometry when text runs arrive out of order", async () => {
   let destroyed = false;
-  const item = (str, x, y, width) => ({ str, width, height: 10, transform: [1, 0, 0, 1, x, y] });
+  const item = (str, x, y, width) => ({
+    str,
+    width,
+    height: 10,
+    transform: [1, 0, 0, 1, x, y],
+  });
   const pdf = {
     numPages: 1,
     getAttachments: async () => null,
@@ -318,4 +324,116 @@ test("Add field inserts into the focused source before selecting its editable na
   context.showAddFieldModal();
   assert.deepEqual(JSON.parse(editor.value).Name2, ["New detail"]);
   assert.equal(editor.value.slice(...editor.selection), '"Name2"');
+});
+
+test("Upload storage errors remain visible and preserve the review for retry", async () => {
+  const { context, files, nodes, stored } = importReviewContext();
+  files.put = async () => {
+    throw new Error("Document storage is full.");
+  };
+  context.showImportReview({ basics: { name: "Replacement" } }, "text", "resume.pdf", [], {
+    file: new Blob(["%PDF-"]),
+    format: "pdf",
+  });
+  await nodes["#newImport"].onclick();
+  assert.equal(nodes["#importReviewError"].hidden, false);
+  assert.equal(nodes["#importReviewError"].textContent, "Document storage is full.");
+  assert.equal(context.workspace.resumes.length, 1);
+  assert.equal(nodes["#importReviewJson"].closest().isConnected, true);
+  assert.equal(nodes["#newImport"].disabled, false);
+  assert.deepEqual([...stored.keys()], ["old-upload"]);
+  files.put = async (id, blob) => stored.set(id, blob);
+  await nodes["#newImport"].onclick();
+  assert.equal(nodes["#importReviewError"].hidden, true);
+  assert.equal(nodes["#importReviewJson"].closest().isConnected, false);
+});
+
+function originalStorageContext() {
+  const stored = new Map();
+  let nextFailure = null;
+  const context = {
+    Blob,
+    ArrayBuffer,
+    indexedDB: {
+      open() {
+        const request = {};
+        queueMicrotask(() => {
+          request.result = {
+            transaction() {
+              const tx = {
+                objectStore: () => ({
+                  put(value, key) {
+                    assert.ok(!(value instanceof Blob), "IDB receives bytes, not Blob/File");
+                    const write = {};
+                    queueMicrotask(() => {
+                      if (nextFailure) {
+                        tx.error = nextFailure;
+                        nextFailure = null;
+                        tx.onabort();
+                      } else {
+                        stored.set(key, structuredClone(value));
+                        write.result = key;
+                        write.onsuccess();
+                        tx.oncomplete();
+                      }
+                    });
+                    return write;
+                  },
+                  get(key) {
+                    const read = {};
+                    queueMicrotask(() => {
+                      read.result = stored.get(key);
+                      read.onsuccess();
+                      tx.oncomplete();
+                    });
+                    return read;
+                  },
+                }),
+              };
+              return tx;
+            },
+          };
+          request.onsuccess();
+        });
+        return request;
+      },
+    },
+  };
+  vm.createContext(context);
+  vm.runInContext(imports, context);
+  return {
+    files: vm.runInContext("OriginalFiles", context),
+    stored,
+    failNext(error) {
+      nextFailure = error;
+    },
+  };
+}
+
+test("Original storage writes cloneable bytes and restores exact PDF/DOCX data and MIME types", async () => {
+  const { files, stored } = originalStorageContext();
+  for (const type of [
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ]) {
+    const blob = new Blob([new Uint8Array([0, 255, 1, 10, 13, 0, 128])], { type });
+    await files.put(type, blob);
+    assert.ok(stored.get(type).bytes instanceof ArrayBuffer);
+    const result = await files.get(type);
+    assert.equal(result.type, type);
+    assert.deepEqual(await result.arrayBuffer(), await blob.arrayBuffer());
+  }
+  assert.equal(await files.get("missing"), undefined);
+});
+
+test("Original storage reads legacy Blob records and propagates transaction aborts", async () => {
+  const { files, stored, failNext } = originalStorageContext();
+  const legacy = new Blob(["existing original"], { type: "application/pdf" });
+  stored.set("legacy", legacy);
+  assert.equal(await files.get("legacy"), legacy);
+  failNext(new Error("Quota exceeded"));
+  await assert.rejects(files.put("new", legacy), /Quota exceeded/);
+  assert.equal(await files.get("new"), undefined);
+  await files.put("new", legacy);
+  assert.equal(await (await files.get("new")).text(), "existing original");
 });

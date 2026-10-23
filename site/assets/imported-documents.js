@@ -81,8 +81,18 @@ const OriginalFiles = (() => {
     return zip.generateAsync({ type: "uint8array" });
   }
   return {
-    get: (id) => transaction("readonly", (store) => store.get(id)),
-    put: (id, blob) => transaction("readwrite", (store) => store.put(blob, id)),
+    async get(id) {
+      const stored = await transaction("readonly", (store) => store.get(id));
+      // Older sessions stored Blob values directly.
+      return stored?.bytes instanceof ArrayBuffer
+        ? new Blob([stored.bytes], { type: stored.type || "" })
+        : stored;
+    },
+    async put(id, blob) {
+      // WebKit private contexts support byte records but reject IDB Blob/File values.
+      const record = { bytes: await blob.arrayBuffer(), type: blob.type };
+      return transaction("readwrite", (store) => store.put(record, id));
+    },
     remove: (id) => transaction("readwrite", (store) => store.delete(id)),
     archivePath,
     safeWordBytes,

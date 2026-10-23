@@ -2704,7 +2704,7 @@ async function importResumeFile(file) {
 }
 function showImportReview(parsed, raw, filename, notes, uploaded = null) {
   $("#modalRoot").innerHTML =
-    `<div class="modal-backdrop"><div class="modal import-modal" role="dialog" aria-modal="true" aria-labelledby="importTitle"><h2 id="importTitle">Review imported resume</h2><p>${escapeHtml(filename)} · ${countScalarFields(parsed)} fields extracted. Edit the JSON below before saving. ${escapeHtml(notes.join(" "))}</p><textarea id="importReviewJson" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" aria-label="Review imported JSON"></textarea><details><summary>Extracted source text</summary><pre>${escapeHtml(raw)}</pre></details><div class="modal-actions"><button class="button" id="cancelImport">Cancel</button><button class="button" id="replaceImport">Replace current</button><button class="button primary" id="newImport">Save as new</button></div></div></div>`;
+    `<div class="modal-backdrop"><div class="modal import-modal" role="dialog" aria-modal="true" aria-labelledby="importTitle"><h2 id="importTitle">Review imported resume</h2><p>${escapeHtml(filename)} · ${countScalarFields(parsed)} fields extracted. Edit the JSON below before saving. ${escapeHtml(notes.join(" "))}</p><textarea id="importReviewJson" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" aria-label="Review imported JSON"></textarea><details><summary>Extracted source text</summary><pre>${escapeHtml(raw)}</pre></details><p id="importReviewError" role="alert" hidden></p><div class="modal-actions"><button class="button" id="cancelImport">Cancel</button><button class="button" id="replaceImport">Replace current</button><button class="button primary" id="newImport">Save as new</button></div></div></div>`;
   $("#importReviewJson").value = JSON.stringify(parsed, null, 2);
   const dialog = $("#importReviewJson").closest(".modal");
   const targetResumeId = activeResumeId;
@@ -2714,6 +2714,9 @@ function showImportReview(parsed, raw, filename, notes, uploaded = null) {
     if ($("#newImport").disabled) return;
     const controls = [$("#newImport"), $("#replaceImport"), $("#cancelImport")];
     let sourceDocument;
+    const errorMessage = $("#importReviewError");
+    errorMessage.hidden = true;
+    errorMessage.textContent = "";
     try {
       const data = ResumeFormats.assertModel(JSON.parse($("#importReviewJson").value));
       if (!data || typeof data !== "object" || Array.isArray(data))
@@ -2777,6 +2780,8 @@ function showImportReview(parsed, raw, filename, notes, uploaded = null) {
       close();
       toast("Imported resume saved locally · all source formats available");
     } catch (error) {
+      errorMessage.textContent = error.message;
+      errorMessage.hidden = false;
       toast(error.message);
     } finally {
       if (sourceDocument) await removeUnusedOriginalFiles([sourceDocument]).catch(() => {});

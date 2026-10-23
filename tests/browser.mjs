@@ -10,6 +10,31 @@ const server = createServer(0);
 await new Promise((resolve) => (server.listening ? resolve() : server.once("listening", resolve)));
 const origin = "http://127.0.0.1:" + server.address().port;
 const results = [];
+async function acceptImport(page, format) {
+  const button = page.locator("#newImport");
+  const review = page.locator("#importReviewJson");
+  await review.focus();
+  const before = await button.boundingBox();
+  await review.blur();
+  const after = await button.boundingBox();
+  assert.ok(
+    Math.abs(before.y - after.y) < 1,
+    "Import actions stay still when editing loses focus",
+  );
+  await review.focus();
+  await button.click();
+  await page.waitForFunction(
+    () =>
+      !document.querySelector("#newImport") ||
+      Boolean(document.querySelector("#importReviewError")?.textContent),
+  );
+  assert.equal(
+    await page.evaluate(() => document.querySelector("#importReviewError")?.textContent || ""),
+    "",
+    format + " import saves successfully",
+  );
+  await page.waitForSelector("#newImport", { state: "detached" });
+}
 async function checkViewport(browser, width) {
   const context = await browser.newContext({
     viewport: { width, height: 905 },
@@ -293,8 +318,7 @@ async function checkViewport(browser, width) {
       const fixture = path.join(root, "site/benchmark/tarun." + format);
       await page.setInputFiles("#resumeImportFile", fixture);
       await page.waitForSelector("#importReviewJson");
-      await page.click("#newImport");
-      await page.waitForSelector("#newImport", { state: "detached" });
+      await acceptImport(page, format);
       if (width <= 900) await page.click("#mobileDocumentButton");
       assert.equal(await page.locator("#documentView").inputValue(), "original");
       if (format === "pdf") await page.waitForSelector(".original-pdf-page canvas");
@@ -347,6 +371,8 @@ async function checkViewport(browser, width) {
           .filter((node) => node.getClientRects().length)
           .map((node) => node.id),
         scale: document.querySelector("#previewPages")?.dataset.displayScale,
+        importError: document.querySelector("#importReviewError")?.textContent,
+        importTitle: document.querySelector("#importTitle")?.textContent,
       }))
       .catch(() => null);
     await page

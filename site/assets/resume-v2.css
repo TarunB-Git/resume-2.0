@@ -828,7 +828,7 @@ a.button {
   .import-modal > textarea {
     flex: 1 1 160px;
   }
-  .import-modal:has(textarea:focus) > p {
+  .import-modal > p {
     max-height: 48px;
     flex-shrink: 0;
     overflow: auto;
