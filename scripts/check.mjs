@@ -14,7 +14,30 @@ for (const dir of ["scripts", "tests", "site/benchmark"]) {
   }
 }
 let failed = false;
+let trackedFiles;
+const checkedTrackedFiles = new Set();
+if (fs.existsSync(path.join(root, ".git"))) {
+  const tracked = spawnSync("git", ["ls-files", "--cached", "-z"], {
+    cwd: root,
+    encoding: "utf8",
+  });
+  if (tracked.status === 0) trackedFiles = new Set(tracked.stdout.split("\0"));
+  else {
+    console.error("Could not inspect files included in Git.");
+    failed = true;
+  }
+}
+function checkTracked(file) {
+  const relative = path.relative(root, file).split(path.sep).join("/");
+  if (checkedTrackedFiles.has(relative)) return;
+  checkedTrackedFiles.add(relative);
+  if (trackedFiles && !trackedFiles.has(relative)) {
+    console.error("File missing from Git: " + relative);
+    failed = true;
+  }
+}
 for (const file of sources) {
+  checkTracked(file);
   const check = spawnSync(process.execPath, ["--check", file], { encoding: "utf8" });
   if (check.status) {
     process.stderr.write(check.stderr);
@@ -26,13 +49,15 @@ if (new Set(ids).size !== ids.length) {
   console.error("Duplicate HTML IDs.");
   failed = true;
 }
-for (const match of html.matchAll(/(?:src|href)="([^"#]+)"/g)) {
-  if (/^(https?:|data:)/.test(match[1])) continue;
-  if (!fs.existsSync(path.join(site, match[1]))) {
-    console.error("Missing asset: " + match[1]);
+function checkAsset(asset) {
+  if (/^(https?:|data:)/.test(asset)) return;
+  const file = path.join(site, asset);
+  if (!fs.existsSync(file)) {
+    console.error("Missing asset: " + asset);
     failed = true;
-  }
+  } else checkTracked(file);
 }
+for (const match of html.matchAll(/(?:src|href)="([^"#]+)"/g)) checkAsset(match[1]);
 for (const name of [
   "xmlEditor",
   "xmlStats",
@@ -49,6 +74,9 @@ const appSources = sources
   .filter((file) => file.startsWith(path.join(site, "assets")))
   .map((file) => fs.readFileSync(file, "utf8"))
   .join("\n");
+for (const match of appSources.matchAll(/loadScript\(["']([^"']+)["']\)/g))
+  checkAsset(match[1]);
+checkAsset("assets/vendor/JSZIP-LICENSE.txt");
 const dynamicIds = [
   ...appSources.matchAll(/\bid=["']([\w-]+)["']|\.id\s*=\s*["']([\w-]+)["']/g),
 ].map((match) => match[1] || match[2]);
@@ -65,4 +93,4 @@ if (/Maya|Samira|single column|two columns/.test(html)) {
   failed = true;
 }
 if (failed) process.exit(1);
-console.log("JavaScript syntax, unique controls, local assets and branding passed.");
+console.log("JavaScript syntax, unique controls, release files, local assets and branding passed.");
