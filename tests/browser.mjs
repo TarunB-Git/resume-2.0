@@ -35,6 +35,27 @@ async function acceptImport(page, format) {
   );
   await page.waitForSelector("#newImport", { state: "detached" });
 }
+async function waitForOriginal(page, format) {
+  await page.waitForFunction(() =>
+    ["ready", "error"].includes(
+      document.querySelector(".original-document")?.dataset.renderState,
+    ),
+  );
+  const status = await page.locator(".original-document").evaluate((node) => ({
+    state: node.dataset.renderState,
+    error: node.querySelector(".original-status")?.textContent || "",
+  }));
+  assert.equal(status.state, "ready", format + " preview: " + status.error);
+  if (format === "pdf") await page.waitForSelector(".original-pdf-page canvas");
+  else {
+    const section = page
+      .frameLocator(".original-word-frame")
+      .locator("section.imported-docx")
+      .first();
+    await section.waitFor();
+    assert.match(await section.innerText(), /Tarun B/);
+  }
+}
 async function checkViewport(browser, width) {
   const context = await browser.newContext({
     viewport: { width, height: 905 },
@@ -45,8 +66,17 @@ async function checkViewport(browser, width) {
     route.fulfill({ status: 200, contentType: "application/javascript", body: "" }),
   );
   const page = await context.newPage(),
-    errors = [];
-  page.on("pageerror", (error) => errors.push(error.message));
+    errors = [],
+    errorDetails = [],
+    failedRequests = [];
+  page.on("pageerror", (error) => {
+    errors.push(error.message);
+    errorDetails.push({ message: error.message, stack: error.stack });
+  });
+  page.on("requestfailed", (request) => {
+    if (failedRequests.length < 50)
+      failedRequests.push({ url: request.url(), error: request.failure()?.errorText });
+  });
   try {
     await page.goto(origin);
     await page.waitForSelector("#previewPages");
@@ -321,13 +351,7 @@ async function checkViewport(browser, width) {
       await acceptImport(page, format);
       if (width <= 900) await page.click("#mobileDocumentButton");
       assert.equal(await page.locator("#documentView").inputValue(), "original");
-      if (format === "pdf") await page.waitForSelector(".original-pdf-page canvas");
-      else
-        await page
-          .frameLocator(".original-word-frame")
-          .locator("section.imported-docx")
-          .first()
-          .waitFor();
+      await waitForOriginal(page, format);
       const stored = await page.evaluate(async () =>
         Array.from(
           new Uint8Array(await (await OriginalFiles.get(currentOriginal().id)).arrayBuffer()),
@@ -337,16 +361,32 @@ async function checkViewport(browser, width) {
       await page.selectOption("#documentView", "edited");
       await page.waitForSelector(format === "pdf" ? ".resume-paper" : "#wordEditor");
       await page.selectOption("#documentView", "original");
+      await waitForOriginal(page, format);
       await page.reload();
       await page.waitForSelector("#documentView");
       assert.equal(await page.locator("#documentView").inputValue(), "original");
-      if (format === "pdf") await page.waitForSelector(".original-pdf-page canvas");
-      else
-        await page
-          .frameLocator(".original-word-frame")
-          .locator("section.imported-docx")
-          .first()
-          .waitFor();
+      await waitForOriginal(page, format);
+      if (format === "docx") {
+        const identity = await page.frameLocator(".original-word-frame").locator("body").evaluate((body) => {
+          body.dataset.previewIdentity = "retained";
+          return body.dataset.previewIdentity;
+        });
+        for (let cycle = 0; cycle < 3; cycle++) {
+          if (width <= 900) {
+            await page.click("#mobileSourceButton");
+            await page.click("#mobileDocumentButton");
+          } else {
+            await page.click("#documentViewButton");
+            await page.click("#splitViewButton");
+          }
+          await waitForOriginal(page, format);
+          assert.equal(
+            await page.frameLocator(".original-word-frame").locator("body").getAttribute("data-preview-identity"),
+            identity,
+            "Pane switching retains the Word iframe document",
+          );
+        }
+      }
     }
     await page.goto(origin + "/#why-json");
     await page.waitForSelector('[data-walkthrough-format="json"]');
@@ -373,6 +413,9 @@ async function checkViewport(browser, width) {
         scale: document.querySelector("#previewPages")?.dataset.displayScale,
         importError: document.querySelector("#importReviewError")?.textContent,
         importTitle: document.querySelector("#importTitle")?.textContent,
+        renderState: document.querySelector(".original-document")?.dataset.renderState,
+        previewError: document.querySelector(".original-status")?.textContent,
+        frameSections: document.querySelector(".original-word-frame")?.contentDocument?.querySelectorAll("section.imported-docx").length,
       }))
       .catch(() => null);
     await page
@@ -381,7 +424,7 @@ async function checkViewport(browser, width) {
     await writeFile(
       path.join(artifacts, name + ".json"),
       JSON.stringify(
-        { browser: browser.browserType().name(), width, error: error.message, errors, state },
+        { browser: browser.browserType().name(), width, error: error.message, errors, errorDetails, failedRequests, state },
         null,
         2,
       ),

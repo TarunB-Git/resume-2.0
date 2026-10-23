@@ -732,18 +732,20 @@ function setPanelGrid() {
 }
 function renderPanelOrder() {
   const container = $("#workspacePanels");
-  paneNodes[activeInput].prepend($("#resumeTabs"));
-  container.replaceChildren();
+  const tabs = $("#resumeTabs");
+  if (tabs.parentElement !== paneNodes[activeInput]) paneNodes[activeInput].prepend(tabs);
+  $$(".pane-resizer", container).forEach((divider) => divider.remove());
   container.classList.toggle(
     "document-only",
     isCompactLayout() ? mobilePane === "document" : workspaceLayout === "document",
   );
   const visible = visiblePanelOrder();
+  const ordered = [];
   visible.forEach((id, index) => {
     const pane = paneNodes[id];
     pane.classList.remove("hidden");
     pane.classList.remove("collapsed");
-    container.appendChild(pane);
+    ordered.push(pane);
     if (index < visible.length - 1) {
       const divider = document.createElement("div");
       divider.className = "pane-resizer";
@@ -756,15 +758,33 @@ function renderPanelOrder() {
       divider.title = "Drag to resize output · use arrow keys when focused";
       divider.setAttribute("aria-valuemin", "16");
       divider.setAttribute("aria-valuemax", "84");
-      container.appendChild(divider);
+      ordered.push(divider);
     }
   });
   Object.keys(paneNodes)
     .filter((id) => !visible.includes(id))
     .forEach((id) => {
       paneNodes[id].classList.add("hidden");
-      container.appendChild(paneNodes[id]);
+      ordered.push(paneNodes[id]);
     });
+  // Moving an iframe's ancestor clears its document, even within the same parent.
+  // Keep output attached and arrange the other panes around it.
+  const output = paneNodes.output;
+  const pivot = ordered.indexOf(output);
+  let anchor = output;
+  for (let index = pivot - 1; index >= 0; index--) {
+    const node = ordered[index];
+    if (node.parentElement !== container || node.nextSibling !== anchor)
+      container.insertBefore(node, anchor);
+    anchor = node;
+  }
+  anchor = null;
+  for (let index = ordered.length - 1; index > pivot; index--) {
+    const node = ordered[index];
+    if (node.parentElement !== container || node.nextSibling !== anchor)
+      container.insertBefore(node, anchor);
+    anchor = node;
+  }
   syncFilesPanel();
   $("#splitViewButton").setAttribute("aria-pressed", String(workspaceLayout === "split"));
   $("#documentViewButton").setAttribute("aria-pressed", String(workspaceLayout === "document"));

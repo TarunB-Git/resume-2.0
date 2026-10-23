@@ -437,3 +437,263 @@ test("Original storage reads legacy Blob records and propagates transaction abor
   await files.put("new", legacy);
   assert.equal(await (await files.get("new")).text(), "existing original");
 });
+
+function paneOrderContext() {
+  let outputMoves = 0;
+  const element = (id) => ({
+    id,
+    children: [],
+    dataset: {},
+    attributes: {},
+    classes: new Set(),
+    get nextSibling() {
+      if (!this.parentElement) return null;
+      return this.parentElement.children[this.parentElement.children.indexOf(this) + 1] || null;
+    },
+    insertBefore(node, anchor) {
+      if (node.id === "output") outputMoves++;
+      if (node.parentElement) node.remove();
+      const index = anchor ? this.children.indexOf(anchor) : this.children.length;
+      assert.ok(index >= 0);
+      this.children.splice(index, 0, node);
+      node.parentElement = this;
+    },
+    prepend(node) {
+      this.insertBefore(node, this.children[0] || null);
+    },
+    remove() {
+      const parent = this.parentElement;
+      if (parent) parent.children.splice(parent.children.indexOf(this), 1);
+      this.parentElement = null;
+    },
+    setAttribute(key, value) {
+      this.attributes[key] = value;
+    },
+  });
+  const make = (id) => {
+    const node = element(id);
+    node.classList = {
+      add: (key) => node.classes.add(key),
+      remove: (key) => node.classes.delete(key),
+      toggle(key, value) {
+        value ? node.classes.add(key) : node.classes.delete(key);
+      },
+    };
+    return node;
+  };
+  const container = make("container"),
+    tabs = make("tabs");
+  const panes = Object.fromEntries(
+    ["json", "xml", "latex", "markdown", "output"].map((id) => [id, make(id)]),
+  );
+  for (const pane of Object.values(panes)) {
+    container.children.push(pane);
+    pane.parentElement = container;
+  }
+  panes.json.prepend(tabs);
+  const context = {
+    activeInput: "json",
+    paneNodes: panes,
+    mobilePane: "document",
+    workspaceLayout: "split",
+    sourceFirst: true,
+    collapsedPanels: {},
+    panelWeights: {},
+    workspace: {},
+    compact: false,
+    isCompactLayout: () => context.compact,
+    document: { createElement: () => make("divider") },
+    $: (selector) =>
+      selector === "#workspacePanels"
+        ? container
+        : selector === "#resumeTabs"
+          ? tabs
+          : make(selector),
+    $$: () => container.children.filter((node) => node.id === "divider"),
+    panelResizeVertical: () => false,
+    syncFilesPanel() {},
+    setPanelGrid() {},
+    saveWorkspace() {},
+    requestAnimationFrame() {},
+    fitPreview() {},
+  };
+  vm.createContext(context);
+  vm.runInContext(
+    studio.slice(
+      studio.indexOf("function visiblePanelOrder("),
+      studio.indexOf("function setPanelGrid("),
+    ),
+    context,
+  );
+  vm.runInContext(
+    studio.slice(
+      studio.indexOf("function renderPanelOrder("),
+      studio.indexOf("function reorderPanels("),
+    ),
+    context,
+  );
+  return { context, container, panes, tabs, outputMoves: () => outputMoves };
+}
+
+test("Pane changes preserve the attached output across source modes, reordering and mobile switching", () => {
+  const { context, container, panes, tabs, outputMoves } = paneOrderContext();
+  for (const compact of [false, true, false]) {
+    context.compact = compact;
+    for (const sourceFirst of [true, false]) {
+      context.sourceFirst = sourceFirst;
+      for (const activeInput of ["json", "xml", "markdown", "latex"]) {
+        context.activeInput = activeInput;
+        for (const mobilePane of ["source", "document", "document", "source"]) {
+          context.mobilePane = mobilePane;
+          context.renderPanelOrder();
+          const visible = container.children
+            .filter((node) => !node.classes.has("hidden"))
+            .map((node) => node.id);
+          const expected = compact
+            ? [mobilePane === "source" ? activeInput : "output"]
+            : sourceFirst
+              ? [activeInput, "divider", "output"]
+              : ["output", "divider", activeInput];
+          assert.deepEqual(visible, expected);
+          assert.equal(panes.output.parentElement, container);
+          assert.equal(tabs.parentElement, panes[activeInput]);
+          assert.equal(outputMoves(), 0, "An existing Word iframe must remain attached");
+        }
+      }
+    }
+  }
+  context.workspaceLayout = "document";
+  context.renderPanelOrder();
+  assert.deepEqual(
+    container.children.filter((node) => !node.classes.has("hidden")).map((node) => node.id),
+    ["output"],
+  );
+  assert.equal(outputMoves(), 0);
+});
+
+test("Word rendering stops before reading or unpacking a cancelled document", async () => {
+  let read = 0,
+    unpacked = 0;
+  const context = {
+    document: {
+      createElement: () => ({}),
+      head: { append: (script) => queueMicrotask(() => script.onload()) },
+    },
+    JSZip: {
+      async loadAsync() {
+        unpacked++;
+        return { files: {}, generateAsync: () => new Uint8Array() };
+      },
+    },
+  };
+  vm.createContext(context);
+  vm.runInContext(imports, context);
+  const files = vm.runInContext("OriginalFiles", context);
+  await files.safeWordBytes(
+    {
+      arrayBuffer() {
+        read++;
+      },
+    },
+    { cancelled: true },
+  );
+  assert.equal(read, 0);
+  let release;
+  const state = { cancelled: false };
+  const pending = files.safeWordBytes(
+    {
+      async arrayBuffer() {
+        read++;
+        return new Promise((resolve) => {
+          release = resolve;
+        });
+      },
+    },
+    state,
+  );
+  while (!release) await new Promise((resolve) => setImmediate(resolve));
+  state.cancelled = true;
+  release(new ArrayBuffer(0));
+  await pending;
+  assert.equal(read, 1);
+  assert.equal(unpacked, 0);
+});
+
+test("A Word preview prepared in a hidden pane retains usable dimensions and measures again when shown", async () => {
+  let visible = false,
+    resized;
+  const section = {
+    getBoundingClientRect: () =>
+      visible ? { width: 794, height: 1123 } : { width: 0, height: 0 },
+  };
+  const doc = {
+    createElement: () => ({}),
+    body: {
+      append() {},
+      get scrollHeight() {
+        return visible ? 1130 : 0;
+      },
+    },
+    fonts: { ready: Promise.resolve() },
+    addEventListener() {},
+    querySelectorAll: () => [section],
+  };
+  const frame = { style: {}, setAttribute() {}, contentDocument: doc };
+  const stack = {
+    dataset: {},
+    replaceChildren(node) {
+      queueMicrotask(() => node.onload());
+    },
+  };
+  const context = {
+    document: { createElement: () => frame },
+    docx: { async renderAsync() {} },
+    ResizeObserver: class {
+      constructor(callback) {
+        resized = callback;
+      }
+      observe() {}
+    },
+    attachPinchZoom: () => () => {},
+    fitPreview() {},
+  };
+  vm.createContext(context);
+  vm.runInContext(imports, context);
+  vm.runInContext("OriginalFiles", context).safeWordBytes = async () => new Uint8Array();
+  await context.renderUploadedWord({}, stack, { cancelled: false });
+  assert.equal(frame.style.width, "816px");
+  assert.notEqual(frame.style.height, "0px");
+  assert.equal(stack.dataset.pageWidth, "816");
+  visible = true;
+  resized();
+  assert.equal(frame.style.width, "794px");
+  assert.equal(frame.style.height, "1130px");
+  assert.equal(stack.dataset.pageHeight, "1123");
+});
+
+test("Stopping an uploaded preview cancels its worker and resolves a pending frame load", () => {
+  const stopped = [];
+  const context = {};
+  vm.createContext(context);
+  vm.runInContext(imports, context);
+  const state = {
+    cancelled: false,
+    render: { cancel: () => stopped.push("render") },
+    task: {
+      destroy() {
+        stopped.push("worker");
+        return Promise.resolve();
+      },
+    },
+    resize: { disconnect: () => stopped.push("resize") },
+    disposePinch: () => stopped.push("pinch"),
+    resolveFrameLoad: () => stopped.push("frame"),
+  };
+  context.preview = state;
+  vm.runInContext("originalPreview = preview", context);
+  context.stopOriginalPreview();
+  context.stopOriginalPreview();
+  assert.equal(state.cancelled, true);
+  assert.deepEqual(stopped, ["render", "worker", "resize", "pinch", "frame"]);
+  assert.equal(vm.runInContext("originalPreview", context), null);
+});

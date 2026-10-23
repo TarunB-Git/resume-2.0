@@ -438,7 +438,7 @@ test("Each pane owns its header and Word retains zoom outside PDF page navigatio
   assert.ok(!html.includes("workspaceTopline"));
   assert.ok(html.indexOf('id="panelJson"') < html.indexOf('id="resumeTabs"'));
   assert.ok(html.indexOf('id="panelOutput"') < html.indexOf('id="outputControls"'));
-  assert.match(studio, /paneNodes\[activeInput\]\.prepend\(\$\("#resumeTabs"\)\)/);
+  assert.match(studio, /paneNodes\[activeInput\]\.prepend\(tabs\)/);
   assert.match(html, /class="document-view-actions"/);
   assert.match(html, /popovertarget="insertOptions"/);
   assert.match(html, /id="insertOptions"[^>]*popover="auto"/);

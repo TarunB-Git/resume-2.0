@@ -705,6 +705,10 @@ function showMobilePane(pane) {
   if (pane === "document" && sourcePreviewPending) renderOutput();
 }
 function initializeWorkspaceV2() {
+  window.addEventListener("pagehide", stopOriginalPreview);
+  window.addEventListener("pageshow", (event) => {
+    if (event.persisted && viewingOriginal()) renderOutput();
+  });
   configureVirtualKeyboard();
   syncViewportHeight();
   let viewportFrame = 0;

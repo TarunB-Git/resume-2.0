@@ -55,9 +55,13 @@ const OriginalFiles = (() => {
     await loadScript("assets/vendor/jszip-3.10.1.min.js");
     await loadScript("assets/vendor/docx-preview-0.4.0.min.js");
   }
-  async function safeWordBytes(file) {
+  async function safeWordBytes(file, state = {}) {
     await wordLibraries();
-    const zip = await JSZip.loadAsync(await file.arrayBuffer());
+    if (state.cancelled) return;
+    const bytes = await file.arrayBuffer();
+    if (state.cancelled) return;
+    const zip = await JSZip.loadAsync(bytes);
+    if (state.cancelled) return;
     const entries = Object.values(zip.files);
     if (
       entries.length > 2000 ||
@@ -68,6 +72,7 @@ const OriginalFiles = (() => {
     for (const entry of entries) {
       if (!entry.name.endsWith(".rels")) continue;
       const source = await entry.async("string");
+      if (state.cancelled) return;
       if (/<!DOCTYPE|<!ENTITY/i.test(source))
         throw new Error("Review the Word document’s relationships.");
       const xml = new DOMParser().parseFromString(source, "application/xml");
@@ -168,6 +173,7 @@ function renderOriginalOutput() {
   host.innerHTML =
     '<div class="preview-pages original-document" id="previewPages"><p class="original-status" role="status">Loading uploaded document…</p></div>';
   const stack = $("#previewPages", host);
+  stack.dataset.renderState = "loading";
   stack.dataset.pageWidth = "320";
   stack.dataset.pageHeight = "200";
   previewPage = 1;
@@ -183,9 +189,11 @@ function renderOriginalOutput() {
     if (!state.cancelled) {
       renderSectionOutline();
       fitPreview();
+      stack.dataset.renderState = "ready";
     }
   })().catch((error) => {
     if (state.cancelled) return;
+    stack.dataset.renderState = "error";
     stack.replaceChildren();
     stack.dataset.pageWidth = "320";
     stack.dataset.pageHeight = "200";
@@ -257,13 +265,15 @@ async function renderUploadedPdf(file, stack, state) {
   }
 }
 async function renderUploadedWord(file, stack, state) {
-  const data = await OriginalFiles.safeWordBytes(file);
+  const data = await OriginalFiles.safeWordBytes(file, state);
   if (state.cancelled) return;
   const frame = document.createElement("iframe");
   frame.title = "Uploaded Word document";
   frame.className = "original-word-frame";
   frame.setAttribute("sandbox", "allow-same-origin");
   frame.style.width = "816px";
+  stack.dataset.pageWidth = "816";
+  stack.dataset.pageHeight = "1056";
   const loaded = new Promise((resolve) => {
     frame.onload = resolve;
     state.resolveFrameLoad = resolve;
@@ -297,15 +307,21 @@ async function renderUploadedWord(file, stack, state) {
   await doc.fonts.ready;
   if (state.cancelled) return;
   const sections = [...doc.querySelectorAll("section.imported-docx")];
-  const width = Math.max(1, ...sections.map((section) => section.getBoundingClientRect().width));
+  if (!sections.length) throw new Error("The Word document contains no readable pages.");
   const resize = () => {
     if (state.cancelled) return;
-    frame.style.height = doc.body.scrollHeight + "px";
+    const width = Math.max(...sections.map((section) => section.getBoundingClientRect().width));
+    const height = doc.body.scrollHeight;
+    // A hidden mobile pane has zero layout dimensions. Measure again when shown.
+    if (width > 0) {
+      frame.style.width = width + "px";
+      stack.dataset.pageWidth = String(width);
+    }
+    if (height > 0) frame.style.height = height + "px";
+    const pageHeight = sections[0].getBoundingClientRect().height;
+    if (pageHeight > 0) stack.dataset.pageHeight = String(pageHeight);
     fitPreview();
   };
-  frame.style.width = width + "px";
-  stack.dataset.pageWidth = width;
-  stack.dataset.pageHeight = sections[0]?.getBoundingClientRect().height || 1056;
   previewPageCount = Math.max(1, sections.length);
   state.resize = new ResizeObserver(resize);
   state.resize.observe(doc.body);
