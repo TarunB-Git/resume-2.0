@@ -36,6 +36,7 @@ Browser storage belongs to the current origin. Session ZIP files transfer work b
 - Recovery of invalid source drafts while retaining the last valid preview.
 - PDF, DOCX, JSON, XML, JSON Resume, LaTeX, Markdown, HTML and text export; ZIP exports the whole workspace.
 - Import review for external documents; exact embedded source recovery from this app's PDF, DOCX and HTML exports.
+- Uploaded PDF and Word files retain their original document view alongside the editable JSON/XML model. Choose **Uploaded document** or **Edited résumé** above the output. Uploaded files are stored in IndexedDB and included in session ZIP backups.
 - Files and folders, drag-and-drop imports, a Move to folder menu, reusable templates and local checkpoints.
 - Resizable desktop panes; Source / Document switching and a Files drawer on small screens.
 - Fit width/page and document zoom from 25% to 300%, including pinch and ctrl-wheel gestures.
@@ -60,6 +61,7 @@ See [format details](docs/formats.md) and [session restoration](docs/sessions.md
 | `site/assets/editor-features.js` | Rich document editing, history, checkpoints and archives |
 | `site/assets/formats.js` | Portable XML, JSON Resume, session merge and format measurements |
 | `site/assets/workspace-v2.js` | Source draft recovery, responsive controls and gesture zoom |
+| `site/assets/imported-documents.js` | Uploaded PDF/Word storage, rendering and restoration |
 | `site/assets/resume-parser.js` | Local text extraction mapping and comparison fields |
 | `tests/` | Data regressions, isolated editor callbacks and browser workflows |
 | `examples/tarun.json` | Sample résumé |

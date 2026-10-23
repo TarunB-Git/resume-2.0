@@ -48,6 +48,8 @@ When importing external JSON Resume data, unmapped collections and nested source
 
 Imports detect content before relying on the filename. HTML imports use an inert document parser. External PDF/DOCX imports extract selectable text and open a review step.
 
+PDF and Word imports also retain the uploaded bytes in browser IndexedDB. The output starts in **Uploaded PDF** or **Uploaded Word** view. PDF pages use PDF.js; Word pages use the bundled docx-preview renderer with the file’s styles, tables, images, headers and footers. **Edited résumé** renders the current JSON/XML model with the selected template. The document selector keeps both views available, and exporting the matching original format downloads the uploaded bytes. External imports retain the extracted text in `layout.importedText` for review. Session ZIP backups include the uploaded files.
+
 ## Recorded application-form comparison
 
 The two tabs compare JSON / Word / PDF and XML / Word / PDF. Each uses the same fictional Tarun B content and document copies. The 12 mapped fields include five intentionally empty values; preserving those blanks counts as a match.

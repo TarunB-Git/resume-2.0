@@ -289,6 +289,41 @@ async function checkViewport(browser, width) {
         }
       }
     }
+    for (const format of ["pdf", "docx"]) {
+      const fixture = path.join(root, "site/benchmark/tarun." + format);
+      await page.setInputFiles("#resumeImportFile", fixture);
+      await page.waitForSelector("#importReviewJson");
+      await page.click("#newImport");
+      await page.waitForSelector("#newImport", { state: "detached" });
+      if (width <= 900) await page.click("#mobileDocumentButton");
+      assert.equal(await page.locator("#documentView").inputValue(), "original");
+      if (format === "pdf") await page.waitForSelector(".original-pdf-page canvas");
+      else
+        await page
+          .frameLocator(".original-word-frame")
+          .locator("section.imported-docx")
+          .first()
+          .waitFor();
+      const stored = await page.evaluate(async () =>
+        Array.from(
+          new Uint8Array(await (await OriginalFiles.get(currentOriginal().id)).arrayBuffer()),
+        ),
+      );
+      assert.deepEqual(Buffer.from(stored), await readFile(fixture), "Uploaded bytes stay intact");
+      await page.selectOption("#documentView", "edited");
+      await page.waitForSelector(format === "pdf" ? ".resume-paper" : "#wordEditor");
+      await page.selectOption("#documentView", "original");
+      await page.reload();
+      await page.waitForSelector("#documentView");
+      assert.equal(await page.locator("#documentView").inputValue(), "original");
+      if (format === "pdf") await page.waitForSelector(".original-pdf-page canvas");
+      else
+        await page
+          .frameLocator(".original-word-frame")
+          .locator("section.imported-docx")
+          .first()
+          .waitFor();
+    }
     await page.goto(origin + "/#why-json");
     await page.waitForSelector('[data-walkthrough-format="json"]');
     assert.equal(await page.locator("[data-walkthrough-format]").count(), 3);

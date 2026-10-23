@@ -554,6 +554,13 @@ function updateJsonEditor() {
   if (document.activeElement !== jsonEditor && !latestJsonError) jsonEditor.value = value;
   highlightJson();
   updateJsonStats();
+  if (
+    isCompactLayout() &&
+    document.activeElement?.matches("#jsonEditor,#xmlEditor,#latexEditor,#markdownInput")
+  ) {
+    persistResume();
+    return;
+  }
   if (document.activeElement !== latexEditor && !sourceState.latexError) {
     latexEditor.value = latexSource();
     latexSourceBeforeEdit = latexEditor.value;
@@ -607,6 +614,7 @@ function highlightSource(editor, layer, language, numbers) {
   editor.wrap = sourceWrap ? "soft" : "off";
   editor.classList.toggle("source-wrapped", sourceWrap);
   layer.classList.toggle("source-wrapped", sourceWrap);
+  if (isCompactLayout()) return;
   layer.style.width = sourceWrap ? `${editor.clientWidth}px` : "max-content";
   const html = syntaxHtml(source, language);
   layer.innerHTML = sourceWrap
@@ -842,7 +850,7 @@ function commitMarkdown() {
   }
 }
 function updatePageControls(scroll = false) {
-  const shown = activeMode !== "word";
+  const shown = viewingOriginal() ? currentOriginal().format === "pdf" : activeMode !== "word";
   $("#pageNavigator").classList.toggle("hidden", !shown);
   $("#pageNumber").max = String(previewPageCount);
   $("#pageNumber").value = String(previewPage);
@@ -870,18 +878,21 @@ function fitPreview() {
   const host = $("#previewBody"),
     pages = $("#previewPages");
   if (!pages) return;
+  const width = Number(pages.dataset.pageWidth) || PAGE.width;
+  const height = Number(pages.dataset.pageHeight) || PAGE.height;
   const zoom =
     previewZoom === "fit"
-      ? Math.max(0.25, Math.min(3, (host.clientWidth - 24) / PAGE.width))
+      ? Math.max(0.25, Math.min(3, (host.clientWidth - 24) / width))
       : previewZoom === "page"
         ? Math.max(
             0.25,
-            Math.min((host.clientWidth - 24) / PAGE.width, (host.clientHeight - 40) / PAGE.height),
+            Math.min((host.clientWidth - 24) / width, (host.clientHeight - 40) / height),
           )
         : Math.max(0.25, Math.min(3, Number(previewZoom) || 1));
-  applyDocumentScale(pages, Math.floor(zoom * 10000) / 10000, PAGE.width);
-  $("#documentStats").textContent =
-    activeMode === "word"
+  applyDocumentScale(pages, Math.floor(zoom * 10000) / 10000, width);
+  $("#documentStats").textContent = viewingOriginal()
+    ? `Uploaded ${currentOriginal().format === "docx" ? "Word" : "PDF"} · ${Math.round(zoom * 100)}%`
+    : activeMode === "word"
       ? `Word · ${Math.round(zoom * 100)}%`
       : `${paperSize().label} · ${previewPageCount} page${previewPageCount === 1 ? "" : "s"} · ${Math.round(zoom * 100)}%`;
 }
@@ -1367,6 +1378,17 @@ function buildPreviewPages() {
 }
 
 function renderOutput() {
+  if (
+    isCompactLayout() &&
+    mobilePane === "source" &&
+    document.activeElement?.matches("#jsonEditor,#xmlEditor,#latexEditor,#markdownInput")
+  ) {
+    sourcePreviewPending = true;
+    return;
+  }
+  sourcePreviewPending = false;
+  syncOriginalControl();
+  if (renderOriginalOutput()) return;
   syncWordToolbar();
   $("#pageNavigator").classList.toggle("hidden", activeMode === "word");
   if (activeMode === "word") {
@@ -2324,6 +2346,7 @@ function setWhyPage(show) {
     expandWalkthrough(false);
   }
   $(".app").classList.toggle("hidden", show);
+  configureVirtualKeyboard();
   $("#whyJsonPage").classList.toggle("hidden", !show);
   document.title = show ? "Why JSON? — Résumé 2.0" : "Résumé 2.0";
 }
@@ -2352,26 +2375,34 @@ async function extractTextFromPdf(file, restoreSource = true) {
     for (let index = 1; index <= pdf.numPages; index++) {
       const page = await pdf.getPage(index),
         content = await page.getTextContent();
-      let lines = [],
-        line = [],
-        lastY = null;
-      for (const item of content.items) {
-        if (!item.str) continue;
+      const rows = [];
+      for (const item of content.items
+        .filter((item) => item.str?.trim())
+        .sort((a, b) => b.transform[5] - a.transform[5])) {
         const y = item.transform[5];
-        if (lastY !== null && Math.abs(y - lastY) > Math.max(2, item.height * 0.4)) {
-          if (line.length) lines.push(line.join(" "));
-          line = [];
+        let row = rows.at(-1);
+        if (!row || Math.abs(row.y - y) > Math.max(2, item.height * 0.35)) {
+          row = { y, items: [] };
+          rows.push(row);
         }
-        line.push(item.str);
-        lastY = y;
-        if (item.hasEOL) {
-          lines.push(line.join(" "));
-          line = [];
-          lastY = null;
-        }
+        row.items.push(item);
       }
-      if (line.length) lines.push(line.join(" "));
-      pages.push(lines.join("\n"));
+      pages.push(
+        rows
+          .map((row) =>
+            row.items
+              .sort((a, b) => a.transform[4] - b.transform[4])
+              .map((item, i, items) => {
+                const previous = items[i - 1];
+                const gap = previous
+                  ? item.transform[4] - previous.transform[4] - previous.width
+                  : 0;
+                return (previous && gap > Math.max(1, item.height * 0.12) ? " " : "") + item.str;
+              })
+              .join(""),
+          )
+          .join("\n"),
+      );
     }
     const text = pages.join("\n\n").trim();
     let resumeData = null;
@@ -2413,6 +2444,7 @@ async function extractTextFromDocx(file) {
   let cursor = view.getUint32(end + 16, true);
   let xmlBytes = null,
     resumeData = null;
+  const supplementaryParts = [];
   const decoder = new TextDecoder();
   for (let index = 0; index < entries; index++) {
     if (read32(cursor) !== 0x02014b50) break;
@@ -2423,7 +2455,11 @@ async function extractTextFromDocx(file) {
     const commentLength = view.getUint16(cursor + 32, true);
     const localOffset = read32(cursor + 42);
     const name = decoder.decode(bytes.subarray(cursor + 46, cursor + 46 + nameLength));
-    if (name === "word/document.xml" || name === "forma/resume.json") {
+    if (
+      name === "word/document.xml" ||
+      name === "forma/resume.json" ||
+      /^word\/(?:header\d+|footer\d+|footnotes|endnotes)\.xml$/.test(name)
+    ) {
       const localName = view.getUint16(localOffset + 26, true);
       const localExtra = view.getUint16(localOffset + 28, true);
       const start = localOffset + 30 + localName + localExtra;
@@ -2436,14 +2472,17 @@ async function extractTextFromDocx(file) {
             new Blob([packed]).stream().pipeThrough(new DecompressionStream("deflate-raw")),
           ).arrayBuffer(),
         );
-      } else throw new Error("This .docx uses a compression method the local parser cannot read.");
+      } else
+        throw new Error(
+          "Save the Word file using standard DOCX compression, then import it again.",
+        );
       if (name === "word/document.xml") xmlBytes = unpacked;
-      else {
+      else if (name === "forma/resume.json") {
         try {
           const value = JSON.parse(decoder.decode(unpacked));
           if (value && typeof value === "object" && !Array.isArray(value)) resumeData = value;
         } catch {}
-      }
+      } else supplementaryParts.push({ name, bytes: unpacked });
     }
     cursor += 46 + nameLength + extraLength + commentLength;
   }
@@ -2453,11 +2492,21 @@ async function extractTextFromDocx(file) {
     throw new Error("The .docx document body is malformed.");
   return {
     text: [
-      ...documentXml.getElementsByTagNameNS(
-        "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
-        "p",
-      ),
+      ...supplementaryParts.filter((part) => /^word\/header/.test(part.name)),
+      { document: documentXml },
+      ...supplementaryParts.filter((part) => !/^word\/header/.test(part.name)),
     ]
+      .map(
+        (part) =>
+          part.document ||
+          new DOMParser().parseFromString(decoder.decode(part.bytes), "application/xml"),
+      )
+      .flatMap((part) => [
+        ...part.getElementsByTagNameNS(
+          "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+          "p",
+        ),
+      ])
       .map((paragraph) =>
         [
           ...paragraph.getElementsByTagNameNS(
@@ -2611,14 +2660,12 @@ async function importResumeFile(file) {
       parsed = raw.includes("\\CVField{")
         ? parseLatexFields(raw, empty).data
         : parseResumeText(raw);
-      notes.push(
-        "CVField data is mapped exactly. Other LaTeX is extracted as text; this browser has no TeX typesetter.",
-      );
+      notes.push("CVField data is mapped exactly. Other LaTeX is extracted as text.");
     } else if (extension === "pdf") {
       const result = await extractTextFromPdf(file);
       raw = result.text;
-      if (!raw && !result.resumeData) throw new Error(result.problems.join(" "));
-      parsed = result.resumeData || parseResumeText(raw);
+      parsed = result.resumeData || (raw ? parseResumeText(raw) : deepClone(empty));
+      if (!result.resumeData) parsed.layout = { ...(parsed.layout || {}), importedText: raw };
       notes.push(
         ...result.problems,
         result.resumeData
@@ -2629,6 +2676,7 @@ async function importResumeFile(file) {
       const result = await extractTextFromDocx(file);
       raw = result.text;
       parsed = result.resumeData || parseResumeText(raw);
+      if (!result.resumeData) parsed.layout = { ...(parsed.layout || {}), importedText: raw };
       notes.push(
         result.resumeData
           ? "Original Résumé 2.0 JSON restored from the document."
@@ -2641,24 +2689,56 @@ async function importResumeFile(file) {
       throw new Error("Choose PDF, DOCX, JSON, XML, HTML, LaTeX, Markdown, text or a session ZIP.");
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
       throw new Error("Resume must contain a JSON object.");
-    showImportReview(parsed, raw, file.name, notes);
+    showImportReview(
+      parsed,
+      raw,
+      file.name,
+      notes,
+      ["pdf", "docx"].includes(extension) ? { file, format: extension } : null,
+    );
   } catch (error) {
     toast(`Could not parse file: ${error.message}`);
   } finally {
     button.disabled = false;
   }
 }
-function showImportReview(parsed, raw, filename, notes) {
+function showImportReview(parsed, raw, filename, notes, uploaded = null) {
   $("#modalRoot").innerHTML =
-    `<div class="modal-backdrop"><div class="modal import-modal" role="dialog" aria-modal="true" aria-labelledby="importTitle"><h2 id="importTitle">Review imported resume</h2><p>${escapeHtml(filename)} · ${countScalarFields(parsed)} fields extracted. Edit the JSON below before saving. ${escapeHtml(notes.join(" "))}</p><textarea id="importReviewJson" spellcheck="false" aria-label="Review imported JSON"></textarea><details><summary>Extracted source text</summary><pre>${escapeHtml(raw)}</pre></details><div class="modal-actions"><button class="button" id="cancelImport">Cancel</button><button class="button" id="replaceImport">Replace current resume</button><button class="button primary" id="newImport">Save as new resume</button></div></div></div>`;
+    `<div class="modal-backdrop"><div class="modal import-modal" role="dialog" aria-modal="true" aria-labelledby="importTitle"><h2 id="importTitle">Review imported resume</h2><p>${escapeHtml(filename)} · ${countScalarFields(parsed)} fields extracted. Edit the JSON below before saving. ${escapeHtml(notes.join(" "))}</p><textarea id="importReviewJson" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" aria-label="Review imported JSON"></textarea><details><summary>Extracted source text</summary><pre>${escapeHtml(raw)}</pre></details><div class="modal-actions"><button class="button" id="cancelImport">Cancel</button><button class="button" id="replaceImport">Replace current</button><button class="button primary" id="newImport">Save as new</button></div></div></div>`;
   $("#importReviewJson").value = JSON.stringify(parsed, null, 2);
+  const dialog = $("#importReviewJson").closest(".modal");
+  const targetResumeId = activeResumeId;
   const close = () => $("#modalRoot").replaceChildren();
   $("#cancelImport").onclick = close;
-  const accept = (asNew) => {
+  const accept = async (asNew) => {
+    if ($("#newImport").disabled) return;
+    const controls = [$("#newImport"), $("#replaceImport"), $("#cancelImport")];
+    let sourceDocument;
     try {
       const data = ResumeFormats.assertModel(JSON.parse($("#importReviewJson").value));
       if (!data || typeof data !== "object" || Array.isArray(data))
         throw new Error("Use a JSON object");
+      if (!asNew && activeResumeId !== targetResumeId)
+        throw new Error("Open the intended résumé and import the document again.");
+      controls.forEach((control) => {
+        control.disabled = true;
+      });
+      if (uploaded) {
+        sourceDocument = {
+          id: makeWorkspaceId("original"),
+          name: filename,
+          format: uploaded.format,
+          size: uploaded.file.size,
+        };
+        await OriginalFiles.put(sourceDocument.id, uploaded.file);
+        if (!dialog.isConnected) return;
+        activeMode = uploaded.format === "docx" ? "word" : "pdf";
+        workspace.outputMode = activeMode;
+        $$(".mode-tab").forEach((tab) => {
+          tab.classList.toggle("active", tab.dataset.mode === activeMode);
+          tab.setAttribute("aria-selected", String(tab.dataset.mode === activeMode));
+        });
+      }
       if (asNew) {
         const id = makeWorkspaceId("resume");
         workspace.resumes.push({
@@ -2667,21 +2747,42 @@ function showImportReview(parsed, raw, filename, notes) {
           nameAuto: false,
           folderId: pendingImportOptions?.folderId || workspace.folders[0]?.id,
           data,
+          ...(sourceDocument ? { sourceDocument, documentView: "original" } : {}),
         });
         workspace.openIds.push(id);
         switchResume(id);
       } else {
+        const record = workspace.resumes.find((item) => item.id === activeResumeId);
+        const previousSource = record?.sourceDocument;
+        if (record) {
+          if (sourceDocument) {
+            record.sourceDocument = sourceDocument;
+            record.documentView = "original";
+          } else {
+            delete record.sourceDocument;
+            delete record.documentView;
+          }
+        }
         resume = data;
         resetV2SourceState();
         latestJsonError = null;
         updateDocumentStatus();
         syncControls();
+        if (previousSource)
+          removeUnusedOriginalFiles([previousSource]).catch(() =>
+            toast("Clear site storage to remove the replaced upload from this device."),
+          );
       }
       pendingImportOptions = null;
       close();
       toast("Imported resume saved locally · all source formats available");
     } catch (error) {
       toast(error.message);
+    } finally {
+      if (sourceDocument) await removeUnusedOriginalFiles([sourceDocument]).catch(() => {});
+      controls.forEach((control) => {
+        control.disabled = false;
+      });
     }
   };
   $("#replaceImport").onclick = () => accept(false);
@@ -3034,8 +3135,11 @@ async function inspectPdf() {
   try {
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     if (cancelled) return;
-    const filename = safeFilename() + ".pdf",
-      blob = makePdf();
+    const uploaded =
+      viewingOriginal() && currentOriginal().format === "pdf" ? currentOriginal() : null;
+    const filename = uploaded?.name || safeFilename() + ".pdf",
+      blob = uploaded ? await OriginalFiles.get(uploaded.id) : makePdf();
+    if (!blob) throw new Error("Import the original PDF or restore its session ZIP.");
     blobUrl = URL.createObjectURL(blob);
     $("#pdfProofOpen").href = blobUrl;
     $("#pdfProofDownload").disabled = false;
@@ -3482,6 +3586,11 @@ function showAddFieldModal(fromOutput = false) {
   while (Object.hasOwn(resume, `Name${number}`)) number++;
   const key = `Name${number}`;
   resume[key] = ["New detail"];
+  jsonEditor.value = JSON.stringify(resume, null, 2);
+  if (fromOutput) {
+    const record = workspace.resumes.find((item) => item.id === activeResumeId);
+    if (record?.sourceDocument) record.documentView = "edited";
+  }
   if (resume.layout?.richDocument) appendRichSection(key);
   updateDocumentStatus();
   if (!fromOutput) {
@@ -3505,7 +3614,7 @@ function sanitizeTemplateCss(css) {
 function showTemplateModal() {
   const all = [...BUILTIN_TEMPLATES, ...customTemplates];
   $("#modalRoot").innerHTML =
-    `<div class="modal-backdrop"><div class="modal template-library" role="dialog" aria-modal="true" aria-labelledby="templateLibraryTitle"><div class="library-head"><div><h2 id="templateLibraryTitle">Templates</h2><p>Choose a layout. Your content stays with your resume.</p></div><button class="button quiet icon-button" id="closeTemplateLibrary" aria-label="Close templates"><span class="material-symbols-rounded">close</span></button></div><div class="template-library-tools"><input id="templateSearch" placeholder="Search templates" aria-label="Search templates"><button class="button primary" id="createPersonalTemplate"><span class="material-symbols-rounded">add</span>Create template</button><button class="button" id="importPersonalTemplate"><span class="material-symbols-rounded">upload_file</span>Import template</button></div><div class="template-gallery" id="templateLibraryGrid">${all.map((t) => `<article class="library-template ${t.id === resume.template ? "selected" : ""}" data-template-name="${escapeHtml(t.name.toLowerCase())}"><button class="template-card" data-use-template="${escapeHtml(t.id)}"><span class="template-mini" data-mini="${effectiveTemplateId(t)}"><i></i><i></i><i></i></span><strong>${escapeHtml(t.name)}</strong><span>${customTemplates.some((x) => x.id === t.id) ? "Personal template" : effectiveTemplateId(t) === "executive" ? "Sidebar layout" : "Single-column layout"}</span></button><button class="button quiet edit-template-defaults" data-edit-template="${escapeHtml(t.id)}">${customTemplates.some((x) => x.id === t.id) ? "Edit defaults" : "Customize a copy"}</button></article>`).join("")}</div><p class="library-note">Select a template to apply it. To keep edits for future resumes, enable template editing in Style &amp; settings.</p></div></div>`;
+    `<div class="modal-backdrop"><div class="modal template-library" role="dialog" aria-modal="true" aria-labelledby="templateLibraryTitle"><div class="library-head"><div><h2 id="templateLibraryTitle">Templates</h2><p>Choose a layout. Your content stays with your resume.</p></div><button class="button quiet icon-button" id="closeTemplateLibrary" aria-label="Close templates"><span class="material-symbols-rounded">close</span></button></div><div class="template-library-tools"><input id="templateSearch" placeholder="Search templates" aria-label="Search templates"><button class="button primary" id="createPersonalTemplate"><span class="material-symbols-rounded">add</span>Create template</button><button class="button" id="importPersonalTemplate"><span class="material-symbols-rounded">upload_file</span>Import template</button></div><div class="template-gallery" id="templateLibraryGrid">${all.map((t) => `<article class="library-template ${t.id === resume.template ? "selected" : ""}" data-template-name="${escapeHtml(t.name.toLowerCase())}"><button class="template-card" data-use-template="${escapeHtml(t.id)}"><span class="template-mini" data-mini="${effectiveTemplateId(t)}"><i></i><i></i><i></i></span><strong>${escapeHtml(t.name)}</strong><span>${customTemplates.some((x) => x.id === t.id) ? "Personal template" : effectiveTemplateId(t) === "executive" ? "Sidebar layout" : "Single-column layout"}</span></button><button class="button quiet edit-template-defaults" data-edit-template="${escapeHtml(t.id)}">${customTemplates.some((x) => x.id === t.id) ? "Edit defaults" : "Customize a copy"}</button></article>`).join("")}</div><p class="library-note">Select a template to apply it. Customize a copy to save a reusable layout.</p></div></div>`;
   $("#closeTemplateLibrary").onclick = () => $("#modalRoot").replaceChildren();
   $("#templateSearch").oninput = (event) =>
     $$("[data-template-name]").forEach((card) =>
@@ -3539,7 +3648,7 @@ function showTemplateEditor(forceNew = false) {
   const name = current?.name || `${templateById(resume.template).name} Custom`;
   const layout = resume.layout || {};
   $("#modalRoot").innerHTML =
-    `<div class="modal-backdrop" id="templateBackdrop"><div class="modal template-modal" role="dialog" aria-modal="true" aria-labelledby="templateModalTitle"><h2 id="templateModalTitle">${current ? "Edit personal template" : "Create personal template"}</h2><p>Save a reusable layout and content defaults. Your resume text stays editable.</p><div class="form-field"><label for="templateBase">Starting layout</label><select id="templateBase">${BUILTIN_TEMPLATES.map((t) => `<option value="${t.id}" ${(current?.variant || templateById(resume.template).variant || templateById(resume.template).id) === t.id ? "selected" : ""}>${escapeHtml(t.name)}</option>`).join("")}</select></div><label class="template-seed-choice"><input id="includeTemplateText" type="checkbox" ${current?.seed ? "checked" : ""}> Include this resume’s text as content defaults</label><div class="form-field"><label for="templateName">Template name</label><input id="templateName" maxlength="48" value="${escapeHtml(name)}"></div><div class="form-grid"><div class="form-field"><label for="sectionSpacing">Section spacing <output id="spacingValue">${layout.sectionSpacing || 24}px</output></label><input id="sectionSpacing" type="range" min="8" max="48" value="${layout.sectionSpacing || 24}"></div><div class="form-field"><label for="sidebarWidth">Sidebar width <output id="sidebarValue">${layout.sidebarWidth || 31}%</output></label><input id="sidebarWidth" type="range" min="22" max="48" value="${layout.sidebarWidth || 31}"></div></div><div class="form-grid"><div class="form-field"><label for="templateBorder">Section rule</label><select id="templateBorder"><option value="solid">Solid</option><option value="double">Double</option><option value="dashed">Dashed</option><option value="none">None</option></select></div><div class="form-field"><label for="pageBorder">Page border</label><select id="pageBorder"><option value="none">None</option><option value="hairline">Hairline</option><option value="accent">Accent color</option></select></div></div><details class="advanced-template"><summary>Advanced CSS</summary><div class="form-field"><label for="templateCss">Scoped template styles</label><textarea id="templateCss" rows="7" spellcheck="false" placeholder='[data-template="my-template"] .resume-name { letter-spacing: .02em; }'>${escapeHtml(current?.css || "")}</textarea></div></details><div class="template-upload-area"><label for="templateFile">Import a template or use a document as a starting point</label><input id="templateFile" type="file" accept=".css,.json,.pdf,.docx,.tex,.latex,.md,.markdown,.txt,.zip,text/css,application/json"><p>CSS and template JSON preserve supported styling. PDF/Word import text; their original visual layout needs adjustment.</p></div><div class="modal-actions"><button class="button" id="cancelTemplate">Cancel</button><button class="button" id="downloadTemplate">Download template</button><button class="button primary" id="saveTemplate">${current ? "Update template" : "Create template"}</button></div></div></div>`;
+    `<div class="modal-backdrop" id="templateBackdrop"><div class="modal template-modal" role="dialog" aria-modal="true" aria-labelledby="templateModalTitle"><h2 id="templateModalTitle">${current ? "Edit personal template" : "Create personal template"}</h2><p>Save a reusable layout and content defaults. Your resume text stays editable.</p><div class="form-field"><label for="templateBase">Starting layout</label><select id="templateBase">${BUILTIN_TEMPLATES.map((t) => `<option value="${t.id}" ${(current?.variant || templateById(resume.template).variant || templateById(resume.template).id) === t.id ? "selected" : ""}>${escapeHtml(t.name)}</option>`).join("")}</select></div><label class="template-seed-choice"><input id="includeTemplateText" type="checkbox" ${current?.seed ? "checked" : ""}> Include this resume’s text as content defaults</label><div class="form-field"><label for="templateName">Template name</label><input id="templateName" maxlength="48" value="${escapeHtml(name)}"></div><div class="form-grid"><div class="form-field"><label for="sectionSpacing">Section spacing <output id="spacingValue">${layout.sectionSpacing || 24}px</output></label><input id="sectionSpacing" type="range" min="8" max="48" value="${layout.sectionSpacing || 24}"></div><div class="form-field"><label for="sidebarWidth">Sidebar width <output id="sidebarValue">${layout.sidebarWidth || 31}%</output></label><input id="sidebarWidth" type="range" min="22" max="48" value="${layout.sidebarWidth || 31}"></div></div><div class="form-grid"><div class="form-field"><label for="templateBorder">Section rule</label><select id="templateBorder"><option value="solid">Solid</option><option value="double">Double</option><option value="dashed">Dashed</option><option value="none">None</option></select></div><div class="form-field"><label for="pageBorder">Page border</label><select id="pageBorder"><option value="none">None</option><option value="hairline">Hairline</option><option value="accent">Accent color</option></select></div></div><details class="advanced-template"><summary>Advanced CSS</summary><div class="form-field"><label for="templateCss">Scoped template styles</label><textarea id="templateCss" rows="7" spellcheck="false" autocapitalize="off" autocorrect="off" placeholder='[data-template="my-template"] .resume-name { letter-spacing: .02em; }'>${escapeHtml(current?.css || "")}</textarea></div></details><div class="template-upload-area"><label for="templateFile">Import a template or use a document as a starting point</label><input id="templateFile" type="file" accept=".css,.json,.pdf,.docx,.tex,.latex,.md,.markdown,.txt,.zip,text/css,application/json"><p>CSS and template JSON preserve supported styling. PDF and Word provide extracted content for a new template.</p></div><div class="modal-actions"><button class="button" id="cancelTemplate">Cancel</button><button class="button" id="downloadTemplate">Download template</button><button class="button primary" id="saveTemplate">${current ? "Update template" : "Create template"}</button></div></div></div>`;
   $("#templateBorder").value = layout.borderStyle || "solid";
   $("#pageBorder").value = layout.pageBorder || "none";
   const borderWeightField = document.createElement("div");
@@ -4376,6 +4485,18 @@ async function exportFormat(format) {
   saveWordDocument();
   if (format === "print") return printDocument();
   if (format === "zip") return exportWorkspaceZip();
+  const original = currentOriginal();
+  if (viewingOriginal() && original.format === (format === "word" ? "docx" : format)) {
+    try {
+      const file = await OriginalFiles.get(original.id);
+      if (!file) throw new Error("Import the uploaded document or restore its session ZIP.");
+      download(file, original.name);
+      toast("Uploaded document downloaded");
+    } catch (error) {
+      toast(error.message);
+    }
+    return;
+  }
   if (sourceDraftError()) {
     toast("Fix the current source error before exporting, or save a session ZIP");
     return;
@@ -4446,7 +4567,9 @@ function exportCurrent() {
   return exportFormat(activeMode);
 }
 
-jsonEditor.addEventListener("input", parseJsonLive);
+jsonEditor.addEventListener("input", (event) => {
+  if (!event.isComposing) parseJsonLive();
+});
 jsonEditor.addEventListener("scroll", () => {
   $("#highlight").style.transform =
     `translate(${-jsonEditor.scrollLeft}px, ${-jsonEditor.scrollTop}px)`;
@@ -4461,7 +4584,8 @@ jsonEditor.addEventListener("keydown", (event) => {
     parseJsonLive();
   }
 });
-latexEditor.addEventListener("input", () => {
+latexEditor.addEventListener("input", (event) => {
+  if (event.isComposing) return;
   highlightLatex();
   if (!updateFromLatex(latexEditor.value) && !sourceState.latexError) {
     resume.format = { ...(resume.format || {}), latexTemplate: latexEditor.value };
@@ -4753,7 +4877,8 @@ $$("[data-copy-source]").forEach(
     }),
 );
 let markdownTimer;
-$("#markdownInput").addEventListener("input", () => {
+$("#markdownInput").addEventListener("input", (event) => {
+  if (event.isComposing) return;
   clearTimeout(markdownTimer);
   $("#markdownStatus").textContent = "Updating…";
   commitMarkdown();
@@ -4785,6 +4910,7 @@ $("#paperSize").addEventListener("change", (event) => {
 });
 $("#editTemplateButton").addEventListener("click", showTemplateModal);
 $("#addFieldButton").addEventListener("click", () => showAddFieldModal());
+$("#addFieldButton").addEventListener("mousedown", (event) => event.preventDefault());
 $("#addSectionButton").addEventListener("click", () => showAddFieldModal(true));
 $("#addLinkButton").addEventListener("click", () =>
   activeMode === "word" ? showWordLinkDialog() : showAddLinkModal(),
@@ -4913,6 +5039,7 @@ $("#previewBody").addEventListener("keydown", (event) => {
   }
 });
 $("#previewBody").addEventListener("input", (event) => {
+  if (event.isComposing) return;
   if (event.target.closest("#wordEditor")) {
     wordDirty = true;
     saveWordDocument();
@@ -4941,6 +5068,12 @@ $$(".mode-tab").forEach((button) =>
   button.addEventListener("click", () => {
     saveWordDocument();
     activeMode = button.dataset.mode;
+    const record = workspace.resumes.find((item) => item.id === activeResumeId);
+    if (
+      record?.sourceDocument &&
+      record.sourceDocument.format !== (activeMode === "word" ? "docx" : "pdf")
+    )
+      record.documentView = "edited";
     workspace.outputMode = activeMode;
     saveWorkspace();
     $$(".mode-tab").forEach((tab) => {

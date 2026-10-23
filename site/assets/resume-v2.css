@@ -51,19 +51,44 @@
   order: 1;
   flex: 0 0 auto;
 }
+.compile-control {
+  position: relative;
+  display: flex;
+  flex: 0 0 44px;
+  width: 44px;
+}
 .compile-actions .compile-guide {
   display: block;
+  position: absolute;
+  right: 0;
+  bottom: 0;
   margin: 0;
-  order: 1;
-  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
 }
 .compile-actions .compile-guide-summary {
-  width: 32px;
-  height: 36px;
+  width: 20px;
+  min-width: 20px;
+  height: 20px;
+  min-height: 20px;
+  padding: 0;
+  border: 1px solid var(--ui-primary);
+  border-radius: 50%;
+  background: var(--ui-surface);
+  color: var(--ui-primary);
+  font-size: 11px;
+  line-height: 1;
 }
 .top-actions .compile-actions #compileButton {
   margin: 0;
   order: 0;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  padding: 8px;
+}
+.compile-actions #compileButton .material-symbols-rounded {
+  transform: translateX(-3px);
 }
 .compile-actions #reportBugButton {
   order: 2;
@@ -777,8 +802,43 @@ a.button {
     line-height: 1.65;
   }
   .modal {
-    max-height: calc(100dvh - 32px);
+    max-height: 100%;
     overflow: auto;
+    overscroll-behavior: contain;
+    scroll-padding: 24px;
+  }
+  .modal-backdrop {
+    top: var(--app-top, 0px);
+    bottom: auto;
+    height: var(--app-height, 100dvh);
+    padding: 8px;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .modal textarea {
+    height: clamp(80px, calc(var(--app-height, 100dvh) * 0.4), 240px);
+    min-height: 80px;
+    resize: none;
+  }
+  .import-modal {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .import-modal > textarea {
+    flex: 1 1 160px;
+  }
+  .import-modal:has(textarea:focus) > p {
+    max-height: 48px;
+    flex-shrink: 0;
+    overflow: auto;
+  }
+  .modal-actions {
+    position: sticky;
+    bottom: 0;
+    flex-shrink: 0;
+    padding-top: 8px;
+    background: var(--ui-surface);
   }
   .pdf-proof-head {
     flex-wrap: wrap;
@@ -1121,4 +1181,147 @@ a.button {
 }
 .insert-options[popover]:popover-open {
   display: flex;
+}
+
+.original-document {
+  width: max-content;
+  min-width: 0;
+}
+.original-pdf-page {
+  position: relative;
+  background: white;
+  box-shadow: 0 1px 5px #0003;
+}
+.original-pdf-page canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.original-text-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  line-height: 1;
+  text-align: initial;
+  text-size-adjust: none;
+  forced-color-adjust: none;
+  transform-origin: 0 0;
+}
+.original-text-layer :is(span, br) {
+  position: absolute;
+  white-space: pre;
+  color: transparent;
+  cursor: text;
+  transform-origin: 0 0;
+}
+.original-text-layer ::selection {
+  background: #3377dd55;
+}
+.original-word-frame {
+  display: block;
+  border: 0;
+  height: 1056px;
+  background: transparent;
+}
+.original-status {
+  width: 300px;
+  padding: 24px;
+  color: var(--ink);
+  font:
+    16px/1.5 Arial,
+    sans-serif;
+}
+#panelOutput:has(.original-document) :is(#wordToolbar, #toggleWordToolbar) {
+  display: none !important;
+}
+
+@media (max-width: 900px) {
+  .topbar .top-actions {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    align-items: center;
+    justify-items: center;
+    margin-left: 6px;
+    gap: 0;
+  }
+  .top-actions .desktop-project-links {
+    display: contents;
+  }
+  .topbar .top-actions > .button,
+  .topbar .desktop-project-links .button,
+  .topbar .top-actions .export-main,
+  .topbar .top-actions .compile-control #compileButton {
+    border: 0;
+    box-shadow: none;
+    background: transparent;
+    color: var(--ink);
+  }
+  .compile-actions .compile-guide-summary {
+    border: 0;
+    box-shadow: none;
+    background: transparent;
+  }
+  #highlight,
+  #latexHighlight,
+  .line-numbers {
+    display: none;
+  }
+  #jsonEditor,
+  #latexEditor,
+  #xmlEditor,
+  #markdownInput {
+    padding: 14px 12px 40px;
+    color: var(--ink);
+    -webkit-text-fill-color: var(--ink);
+    caret-color: var(--ui-primary);
+    background: var(--ui-surface);
+  }
+  #jsonEditor::selection,
+  #latexEditor::selection {
+    color: var(--ink);
+    -webkit-text-fill-color: var(--ink);
+    background: var(--ui-selected);
+  }
+  .app textarea,
+  .app input,
+  .app select,
+  .modal textarea,
+  .modal input,
+  .modal select {
+    font-size: 16px;
+  }
+  .app textarea {
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-overflow-scrolling: touch;
+    scroll-padding: 24px;
+  }
+  .app.keyboard-open .topbar,
+  .app.keyboard-open .resume-tabs,
+  .app.keyboard-open .editor-pane .pane-head {
+    display: none;
+  }
+  .app.keyboard-open {
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .app.keyboard-open .editor-foot {
+    max-height: 72px;
+    overflow: auto;
+  }
+  .app.keyboard-open .mobile-workspace-bar {
+    padding-bottom: 0;
+  }
+}
+@media (max-width: 600px) {
+  .topbar .compile-actions,
+  .topbar .compile-control,
+  .topbar .top-actions .compile-control #compileButton {
+    flex-basis: 32px;
+    width: 32px;
+    min-width: 32px;
+  }
+  .topbar .compile-actions .compile-guide {
+    right: -3px;
+  }
 }

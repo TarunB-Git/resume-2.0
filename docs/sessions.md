@@ -6,6 +6,7 @@ Choose **Export → ZIP** to download all résumés and formats. The archive con
 - `workspace.json` and `templates.json`: compatibility files for older exports.
 - Per résumé: PDF, DOCX, JSON, XML, JSON Resume, Markdown, LaTeX, HTML, text and template definition.
 - Invalid JSON/source drafts, where present.
+- Uploaded PDF and Word documents in `originals/`, linked to each résumé by its saved document reference.
 
 Folder paths in the archive are readable names. The manifest preserves identities, nesting, checkpoints, active résumé and open tabs. Duplicate filenames receive a suffix.
 

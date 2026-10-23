@@ -25,8 +25,6 @@
           <div aria-label="Résumé 2.0" class="brand">
             <span class="brand-resume">Résumé</span><span class="brand-studio">2.0</span>
           </div>
-        </div>
-        <div class="top-actions">
           <div class="project-links desktop-project-links">
             <a
               aria-label="Tarun’s website"
@@ -53,6 +51,8 @@
                 ></path></svg
             ></a>
           </div>
+        </div>
+        <div class="top-actions">
           <div class="secondary-actions" id="secondaryActions">
             <div class="mobile-menu-title">Résumé 2.0</div>
             <button
@@ -107,36 +107,36 @@
           </div>
           <span aria-live="polite" class="build-state visually-hidden" id="buildState"></span>
           <div aria-label="Compile and support" class="compile-actions" role="group">
-            <button
-              aria-describedby="compileHint"
-              aria-label="Compile and compare changes"
-              class="button primary compile-button icon-button"
-              id="compileButton"
-              title="Save a local checkpoint and compare changes (Ctrl/Cmd+Enter)"
-            >
-              <span aria-hidden="true" class="material-symbols-rounded">play_arrow</span
-              ><span class="compile-label visually-hidden">Compile</span>
-            </button>
-            <details class="compile-guide">
-              <summary
-                aria-label="What does Compile do?"
-                class="compile-guide-summary"
-                title="What does Compile do?"
+            <div class="compile-control">
+              <button
+                aria-describedby="compileHint"
+                aria-label="Compile and compare changes"
+                class="button primary compile-button icon-button"
+                id="compileButton"
+                title="Save a local checkpoint and compare changes (Ctrl/Cmd+Enter)"
               >
-                ?
-              </summary>
-              <div class="compile-guide-popover" id="compileHint">
-                <strong>Changes &amp; checkpoints</strong>
-                <p>
-                  Compile checks your document, compares it with the previous checkpoint, and saves
-                  a local version with matching downloads.
-                </p>
-                <p>
-                  Checkpoints stay on this device and can be restored from version history.
-                </p>
-                <small>Ctrl/Cmd + Enter</small>
-              </div>
-            </details>
+                <span aria-hidden="true" class="material-symbols-rounded">play_arrow</span
+                ><span class="compile-label visually-hidden">Compile</span>
+              </button>
+              <details class="compile-guide">
+                <summary
+                  aria-label="What does Compile do?"
+                  class="compile-guide-summary"
+                  title="What does Compile do?"
+                >
+                  ?
+                </summary>
+                <div class="compile-guide-popover" id="compileHint">
+                  <strong>Changes &amp; checkpoints</strong>
+                  <p>
+                    Compile checks your document, compares it with the previous checkpoint, and
+                    saves a local version with matching downloads.
+                  </p>
+                  <p>Checkpoints stay on this device and can be restored from version history.</p>
+                  <small>Ctrl/Cmd + Enter</small>
+                </div>
+              </details>
+            </div>
             <a
               aria-label="Report a bug"
               class="button quiet icon-button"
@@ -569,6 +569,14 @@
               <div class="output-controls" id="outputControls">
                 <div class="document-foot document-topbar">
                   <div class="document-primary-controls">
+                    <select
+                      id="documentView"
+                      class="small-select hidden"
+                      aria-label="Document view"
+                    >
+                      <option value="original">Uploaded document</option>
+                      <option value="edited">Edited résumé</option>
+                    </select>
                     <div aria-label="Output format" class="segmented mode-tabs" role="tablist">
                       <button
                         aria-selected="true"
@@ -1091,6 +1099,7 @@
     <script src="assets/resume-parser.js"></script>
     <script src="assets/formats.js"></script>
     <script src="assets/anonymize.js"></script>
+    <script src="assets/imported-documents.js"></script>
     <script src="assets/workspace-v2.js"></script>
     <script src="assets/editor-features.js"></script>
     <script src="assets/comparison-result.js"></script>

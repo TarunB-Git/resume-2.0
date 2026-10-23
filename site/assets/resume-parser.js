@@ -23,7 +23,7 @@
   const rolePattern =
     /\b(designer|engineer|developer|manager|analyst|researcher|director|consultant|architect|specialist|coordinator|scientist|lead|intern)\b/i;
   const degreePattern =
-    /\b(BFA|BSc|B\.Sc\.?|BA|BS|MS|MSc|MA|MBA|PhD|Bachelor|Master|Doctor|Diploma|Certificate)\b/i;
+    /\b(BFA|BSc|B\.Sc\.?|BA|BS|MS|MSc|MA|MBA|PhD|B\.?Tech|M\.?Tech|BEng|MEng|B\.?E\.?|M\.?E\.?|Bachelor|Master|Doctor|Diploma|Certificate)\b/i;
   function parseText(source) {
     let text = String(source || "")
       .replace(/\r\n?/g, "\n")
@@ -68,7 +68,16 @@
         .find((x) => !contact(x) && !headings[x.toLowerCase()])
         ?.split(/[|·]/)[0]
         ?.trim() || "";
-    const label = header.find((x) => x !== name && !contact(x) && rolePattern.test(x)) || "";
+    const headerFields = header.flatMap((line) => line.split(/[|·]/).map((value) => value.trim()));
+    const afterName = headerFields[headerFields.indexOf(name) + 1] || "";
+    const label =
+      headerFields.find((x) => x !== name && !contact(x) && rolePattern.test(x)) ||
+      (afterName.length < 100 &&
+      !contact(afterName) &&
+      !datePattern.test(afterName) &&
+      !/[,|·]|^(?:resume|résumé|cv)\b/i.test(afterName)
+        ? afterName
+        : "");
     const contactIndex = lines.findIndex((x) => /^(contact|contact details)$/i.test(x));
     const contactBlock =
       contactIndex >= 0

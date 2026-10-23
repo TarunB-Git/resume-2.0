@@ -6,6 +6,8 @@ Bundled components:
 - Google Material Symbols Rounded, copyright Google LLC, Apache-2.0.
 - Mozilla PDF.js 3.11.174, copyright Mozilla Foundation and contributors,
   Apache-2.0.
+- docx-preview 0.4.0, copyright Volodymyr Baydalka, Apache-2.0.
+- JSZip 3.10.1, copyright Stuart Knightley and contributors, MIT.
 
 Component sources, license text and independent template references are in
 site/assets/THIRD-PARTY-NOTICES.txt and site/assets/LICENSE-APACHE-2.0.txt.

@@ -11,6 +11,17 @@ PDF evaluation is disabled through isEvalSupported: false.
 
 The Apache License 2.0 text is in LICENSE-APACHE-2.0.txt.
 
+docx-preview 0.4.0
+Copyright Volodymyr Baydalka. Licensed under the Apache License 2.0.
+Source: https://github.com/VolodymyrBaydalka/docxjs
+Bundled locally for uploaded Word document rendering.
+
+JSZip 3.10.1
+Copyright Stuart Knightley, David Duponchel, Franz Buchinger and Vincent Briançon.
+Licensed under the MIT License (distribution also offers GPLv3).
+Source: https://github.com/Stuk/jszip
+Full distribution license: vendor/JSZIP-LICENSE.txt.
+
 Template references
 The Harvard, Jake, Awesome CV, and AltaCV presets are independent browser layouts inspired by those formats. They do not include the original LaTeX classes or claim official endorsement.
 Harvard: https://careerservices.fas.harvard.edu/resources/

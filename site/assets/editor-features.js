@@ -136,6 +136,13 @@ function showDeleteResume(item) {
   $("#confirmDeleteResume").onclick = () => {
     root.replaceChildren();
     workspace.resumes = workspace.resumes.filter((record) => record.id !== item.id);
+    if (
+      item.sourceDocument &&
+      !workspace.resumes.some((record) => record.sourceDocument?.id === item.sourceDocument.id)
+    )
+      OriginalFiles.remove(item.sourceDocument.id).catch(() =>
+        toast("Clear site storage to remove the uploaded file from this device."),
+      );
     workspace.openIds = workspace.openIds.filter((id) => id !== item.id);
     documentHistories.delete(item.id);
     if (!workspace.resumes.length) {
@@ -664,6 +671,17 @@ async function exportWorkspaceZip() {
         [`${stem}.html`, documentHtmlExport()],
         [`${stem}.txt`, plainDocumentText()],
       );
+      if (item.sourceDocument) {
+        const path = OriginalFiles.archivePath(item.sourceDocument);
+        if (!files.some(([name]) => name === path)) {
+          const uploaded = await OriginalFiles.get(item.sourceDocument.id);
+          if (!uploaded)
+            throw new Error(
+              "Restore the uploaded document before exporting: " + item.sourceDocument.name,
+            );
+          files.push([path, new Uint8Array(await uploaded.arrayBuffer())]);
+        }
+      }
       if (item.draftJson) files.push([`${stem}.draft.json`, item.draftJson]);
       if (item.sourceDrafts)
         files.push([`${stem}.source-drafts.json`, JSON.stringify(item.sourceDrafts)]);

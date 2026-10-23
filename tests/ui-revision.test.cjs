@@ -147,9 +147,16 @@ test("One-finger scrolling stays native and wheel line/page units are handled", 
 });
 test("Mobile viewport sizing follows the keyboard but preserves browser accessibility zoom", () => {
   const changes = [];
+  const flags = [];
   const c = {
     window: { innerHeight: 800, visualViewport: { height: 500, scale: 1 } },
-    document: { documentElement: { style: { setProperty: (...args) => changes.push(args) } } },
+    mobileViewportBaseline: 0,
+    mobileKeyboardOpen: false,
+    isCompactLayout: () => true,
+    document: {
+      querySelector: () => ({ classList: { toggle: (...args) => flags.push(args) } }),
+      documentElement: { style: { setProperty: (...args) => changes.push(args) } },
+    },
   };
   vm.createContext(c);
   vm.runInContext(between(v2, "function syncViewportHeight(", "function showMobilePane("), c);
@@ -159,6 +166,157 @@ test("Mobile viewport sizing follows the keyboard but preserves browser accessib
   c.window.visualViewport.scale = 2;
   c.syncViewportHeight();
   assert.equal(changes.length, 1);
+  c.document.activeElement = { matches: () => true };
+  c.window.visualViewport.scale = 1;
+  c.window.visualViewport.height = 350;
+  c.syncViewportHeight();
+  assert.deepEqual(flags.at(-1), ["keyboard-open", true]);
+  assert.deepEqual(changes.at(-1), ["--app-height", "350px"]);
+  c.document.activeElement = null;
+  c.syncViewportHeight();
+  assert.deepEqual(flags.at(-1), ["keyboard-open", true]);
+  c.window.visualViewport.height = 800;
+  c.syncViewportHeight();
+  assert.deepEqual(flags.at(-1), ["keyboard-open", false]);
+});
+test("Android keyboard geometry leaves the editor above docked and floating keyboards", () => {
+  const changes = [],
+    flags = [];
+  const keyboard = { overlaysContent: true, boundingRect: { y: 480, width: 390, height: 320 } };
+  const context = {
+    window: {
+      innerHeight: 800,
+      innerWidth: 390,
+      visualViewport: { height: 800, scale: 1, offsetTop: 0 },
+      navigator: { virtualKeyboard: keyboard },
+    },
+    document: {
+      activeElement: { matches: () => true },
+      querySelector: () => ({ classList: { toggle: (...args) => flags.push(args) } }),
+      documentElement: { style: { setProperty: (...args) => changes.push(args) } },
+    },
+    mobileViewportBaseline: 0,
+    mobileKeyboardOpen: false,
+    isCompactLayout: () => true,
+  };
+  vm.createContext(context);
+  vm.runInContext(between(v2, "function syncViewportHeight(", "function showMobilePane("), context);
+  const height = () => changes.filter(([name]) => name === "--app-height").at(-1)[1];
+  context.syncViewportHeight();
+  assert.equal(height(), "480px");
+  assert.deepEqual(flags.at(-1), ["keyboard-open", true]);
+  keyboard.boundingRect = { y: 320, width: 220, height: 220 };
+  context.syncViewportHeight();
+  assert.equal(height(), "320px");
+  keyboard.boundingRect = { y: 0, width: 0, height: 0 };
+  context.syncViewportHeight();
+  assert.equal(height(), "800px");
+  assert.deepEqual(flags.at(-1), ["keyboard-open", false]);
+  keyboard.overlaysContent = false;
+  keyboard.boundingRect = { y: 480, width: 390, height: 320 };
+  context.window.innerHeight = 480;
+  context.window.visualViewport.height = 480;
+  context.syncViewportHeight();
+  assert.equal(height(), "480px");
+});
+test("Keyboard overlay control follows the compact editor and restores the browser setting", () => {
+  let compact = true,
+    hidden = false;
+  const keyboard = { overlaysContent: false };
+  const context = {
+    window: { navigator: { virtualKeyboard: keyboard } },
+    virtualKeyboardInitialOverlay: null,
+    isCompactLayout: () => compact,
+    document: { querySelector: () => ({ classList: { contains: () => hidden } }) },
+  };
+  vm.createContext(context);
+  vm.runInContext(
+    between(v2, "function configureVirtualKeyboard(", "function syncViewportHeight("),
+    context,
+  );
+  context.configureVirtualKeyboard();
+  assert.equal(keyboard.overlaysContent, true);
+  hidden = true;
+  context.configureVirtualKeyboard();
+  assert.equal(keyboard.overlaysContent, false);
+  hidden = false;
+  compact = false;
+  context.configureVirtualKeyboard();
+  assert.equal(keyboard.overlaysContent, false);
+});
+test("Keyboard resizing reveals the textarea caret by scrolling its own text surface", () => {
+  const focused = {
+    matches: (selector) => selector === "textarea",
+    selectionEnd: 2,
+    value: "{}",
+    wrap: "soft",
+    clientWidth: 320,
+    clientHeight: 200,
+    scrollTop: 0,
+  };
+  let removed = 0;
+  const context = {
+    mobileKeyboardOpen: true,
+    isCompactLayout: () => true,
+    getComputedStyle: () => ({
+      lineHeight: "28px",
+      fontSize: "16px",
+      paddingTop: "14px",
+      paddingBottom: "14px",
+      getPropertyValue: () => "",
+    }),
+    document: {
+      activeElement: focused,
+      body: { append() {} },
+      createElement: (tag) =>
+        tag === "span"
+          ? { offsetTop: 600 }
+          : {
+              style: { setProperty() {} },
+              append() {},
+              remove() {
+                removed++;
+              },
+            },
+    },
+  };
+  vm.createContext(context);
+  vm.runInContext(
+    between(v2, "function revealMobileEditingCaret(", "function configureVirtualKeyboard("),
+    context,
+  );
+  context.revealMobileEditingCaret();
+  assert.equal(focused.scrollTop, 442);
+  focused.scrollTop = 900;
+  context.revealMobileEditingCaret();
+  assert.equal(focused.scrollTop, 586);
+  assert.equal(focused.value, "{}");
+  assert.equal(focused.selectionEnd, 2);
+  assert.equal(removed, 2);
+});
+test("Keyboard resizing scrolls a rich document caret into the output area", () => {
+  const host = {
+    scrollTop: 0,
+    contains: () => true,
+    getBoundingClientRect: () => ({ top: 0, bottom: 300 }),
+  };
+  const range = { collapse() {}, getBoundingClientRect: () => ({ top: 330, bottom: 350 }) };
+  const context = {
+    mobileKeyboardOpen: true,
+    isCompactLayout: () => true,
+    document: {
+      activeElement: { matches: () => false, isContentEditable: true },
+      querySelector: () => host,
+      getSelection: () => ({ rangeCount: 1, getRangeAt: () => ({ cloneRange: () => range }) }),
+    },
+  };
+  vm.createContext(context);
+  vm.runInContext(
+    between(v2, "function revealMobileEditingCaret(", "function configureVirtualKeyboard("),
+    context,
+  );
+  context.revealMobileEditingCaret();
+  assert.equal(host.scrollTop, 74);
 });
 test("Header order, restored subtext and removal of the 900px mobile minimum are explicit", () => {
   const html = source("site/index.html"),

@@ -1,6 +1,10 @@
 /* Source adapters, session recovery and touch-aware workspace controls. */
 let mobilePane = "document";
 let mobileWordFormattingOpen = false;
+let sourcePreviewPending = false;
+let mobileViewportBaseline = 0;
+let mobileKeyboardOpen = false;
+let virtualKeyboardInitialOverlay = null;
 const sourceState = {
   xmlCommitted: "",
   xmlError: null,
@@ -150,27 +154,43 @@ async function inspectSessionArchive(file) {
     const data = JSON.parse(manifest.text);
     if (data.format !== "resume20.session" || data.version !== 1)
       throw new Error("Unsupported session archive version.");
-    showSessionImport(data.workspace, data.templates || [], file.name, data.settings);
+    showSessionImport(data.workspace, data.templates || [], file.name, data.settings, file);
     return true;
   }
   const entry = await readArchiveEntry(file, (name) => name === "workspace.json");
   if (!entry) return false;
   const templates = await readArchiveEntry(file, (name) => name === "templates.json");
-  showSessionImport(JSON.parse(entry.text), templates ? JSON.parse(templates.text) : [], file.name);
+  showSessionImport(
+    JSON.parse(entry.text),
+    templates ? JSON.parse(templates.text) : [],
+    file.name,
+    undefined,
+    file,
+  );
   return true;
 }
-function showSessionImport(incoming, templates, filename, settings) {
+function showSessionImport(incoming, templates, filename, settings, archive = null) {
   ResumeFormats.validateSession(incoming);
   const root = $("#modalRoot");
   root.innerHTML = `<div class="modal-backdrop"><section class="modal session-import" role="dialog" aria-modal="true" aria-labelledby="sessionImportTitle"><h2 id="sessionImportTitle">Restore a session</h2><p>${escapeHtml(filename)} contains ${incoming.resumes.length} résumé${incoming.resumes.length === 1 ? "" : "s"}, ${incoming.folders.length} folders and ${templates.length} templates.</p><p>The imported items will be added to this browser. Existing résumés stay intact. Duplicate identifiers are replaced with new ones.</p><div class="modal-actions"><button class="button" id="cancelSessionImport">Cancel</button><button class="button primary" id="confirmSessionImport">Add session</button></div></section></div>`;
   $("#cancelSessionImport").onclick = () => root.replaceChildren();
-  $("#confirmSessionImport").onclick = () => {
+  const dialog = $("#sessionImportTitle").closest(".modal");
+  $("#confirmSessionImport").onclick = async () => {
+    if ($("#confirmSessionImport").disabled) return;
+    const button = $("#confirmSessionImport");
+    button.disabled = true;
+    let restored,
+      applied = false;
     try {
       saveWordDocument();
       persistResume();
+      restored = incoming.resumes.some((item) => item.sourceDocument)
+        ? await restoreOriginalFiles(incoming, archive)
+        : incoming;
+      if (!dialog.isConnected) return;
       const merged = ResumeFormats.mergeSession(
         workspace,
-        incoming,
+        restored,
         customTemplates,
         templates,
         makeWorkspaceId,
@@ -178,6 +198,7 @@ function showSessionImport(incoming, templates, filename, settings) {
       for (const template of merged.templates)
         if (template.css) template.css = sanitizeTemplateCss(template.css);
       workspace = merged.workspace;
+      applied = true;
       customTemplates = merged.templates;
       persistTemplates();
       restoreViewSettings(settings);
@@ -200,6 +221,12 @@ function showSessionImport(incoming, templates, filename, settings) {
       toast("Session restored · existing work kept");
     } catch (error) {
       toast("Session could not be restored: " + error.message);
+    } finally {
+      if (!applied && restored && restored !== incoming)
+        await removeUnusedOriginalFiles(restored.resumes.map((item) => item.sourceDocument)).catch(
+          () => {},
+        );
+      button.disabled = false;
     }
   };
 }
@@ -468,22 +495,121 @@ function attachPinchZoom(host, getScale, setScale) {
     touchGesture = webkitGesture = pointerGesture = null;
   };
 }
+function revealMobileEditingCaret() {
+  if (!isCompactLayout() || !mobileKeyboardOpen) return;
+  const focused = document.activeElement;
+  if (focused?.matches("textarea") && Number.isFinite(focused.selectionEnd)) {
+    const style = getComputedStyle(focused);
+    const mirror = document.createElement("div"),
+      marker = document.createElement("span");
+    mirror.style.cssText =
+      "position:fixed;left:-10000px;top:0;visibility:hidden;box-sizing:border-box;border:0;margin:0;height:auto";
+    for (const property of [
+      "font-family",
+      "font-size",
+      "font-weight",
+      "font-style",
+      "font-variant",
+      "line-height",
+      "letter-spacing",
+      "tab-size",
+      "padding-top",
+      "padding-right",
+      "padding-bottom",
+      "padding-left",
+      "direction",
+      "text-align",
+      "word-break",
+      "overflow-wrap",
+    ])
+      mirror.style.setProperty(property, style.getPropertyValue(property));
+    mirror.style.width = focused.clientWidth + "px";
+    mirror.style.whiteSpace = focused.wrap === "off" ? "pre" : "pre-wrap";
+    mirror.textContent = focused.value.slice(0, focused.selectionEnd);
+    marker.textContent = focused.value[focused.selectionEnd] || "\u200b";
+    mirror.append(marker);
+    document.body.append(mirror);
+    const lineHeight = parseFloat(style.lineHeight) || parseFloat(style.fontSize) * 1.8;
+    const paddingTop = parseFloat(style.paddingTop) || 0;
+    const paddingBottom = parseFloat(style.paddingBottom) || 0;
+    const top = marker.offsetTop,
+      bottom = top + lineHeight;
+    if (bottom + paddingBottom > focused.scrollTop + focused.clientHeight)
+      focused.scrollTop = Math.max(0, bottom + paddingBottom - focused.clientHeight);
+    else if (top - paddingTop < focused.scrollTop)
+      focused.scrollTop = Math.max(0, top - paddingTop);
+    if (focused.wrap === "off") {
+      const left = marker.offsetLeft,
+        right = left + marker.offsetWidth;
+      if (right > focused.scrollLeft + focused.clientWidth)
+        focused.scrollLeft = Math.max(0, right + 16 - focused.clientWidth);
+      else if (left < focused.scrollLeft) focused.scrollLeft = Math.max(0, left - 16);
+    }
+    mirror.remove();
+  } else if (focused?.isContentEditable) {
+    const host = document.querySelector("#previewBody"),
+      selection = document.getSelection();
+    if (!host?.contains(focused) || !selection?.rangeCount) return;
+    const range = selection.getRangeAt(0).cloneRange();
+    range.collapse(false);
+    const caret = range.getBoundingClientRect(),
+      bounds = host.getBoundingClientRect();
+    if (caret.bottom > bounds.bottom - 24) host.scrollTop += caret.bottom - bounds.bottom + 24;
+    else if (caret.top < bounds.top + 16) host.scrollTop += caret.top - bounds.top - 16;
+  }
+}
+function configureVirtualKeyboard() {
+  const keyboard = window.navigator?.virtualKeyboard;
+  if (!keyboard) return;
+  if (virtualKeyboardInitialOverlay === null)
+    virtualKeyboardInitialOverlay = keyboard.overlaysContent;
+  try {
+    keyboard.overlaysContent =
+      isCompactLayout() && !document.querySelector(".app")?.classList.contains("hidden")
+        ? true
+        : virtualKeyboardInitialOverlay;
+  } catch {
+    // Viewport resize events continue to provide the available editor height.
+  }
+}
 function syncViewportHeight() {
   const viewport = window.visualViewport;
+  const focused = document.activeElement;
+  const editing = Boolean(
+    focused?.isContentEditable ||
+      focused?.matches("textarea,input:not([type=button]):not([type=file])"),
+  );
+  const viewportHeight = Math.round(
+    viewport ? viewport.height * viewport.scale : window.innerHeight,
+  );
+  const keyboard = window.navigator?.virtualKeyboard;
+  const bounds = keyboard?.overlaysContent ? keyboard.boundingRect : null;
+  const occluded = bounds && bounds.height > 0 && bounds.width > 0 && Number.isFinite(bounds.y);
+  const visibleHeight = occluded ? Math.min(viewportHeight, bounds.y) : viewportHeight;
+  mobileViewportBaseline = Math.max(mobileViewportBaseline, viewportHeight, window.innerHeight);
+  mobileKeyboardOpen =
+    isCompactLayout() &&
+    Boolean(
+      occluded || (mobileViewportBaseline - visibleHeight > 100 && (editing || mobileKeyboardOpen)),
+    );
+  document.querySelector(".app")?.classList.toggle("keyboard-open", mobileKeyboardOpen);
   if (viewport && viewport.scale !== 1) {
-    const focused = document.activeElement;
     if (focused?.isContentEditable || focused?.matches("textarea,input")) {
       // Keep browser zoom intact while allowing the keyboard to reduce layout height.
       document.documentElement.style.setProperty(
         "--app-height",
-        Math.round(Math.min(window.innerHeight, viewport.height * viewport.scale)) + "px",
+        Math.round(Math.min(window.innerHeight, visibleHeight)) + "px",
       );
     }
     return;
   }
   document.documentElement.style.setProperty(
     "--app-height",
-    Math.round(viewport?.height || window.innerHeight) + "px",
+    Math.round(
+      occluded
+        ? Math.min(viewport?.height || window.innerHeight, bounds.y)
+        : viewport?.height || window.innerHeight,
+    ) + "px",
   );
   if (Number.isFinite(viewport?.offsetTop)) {
     document.documentElement.style.setProperty(
@@ -576,23 +702,73 @@ function showMobilePane(pane) {
   $("#mobileSourceButton").setAttribute("aria-pressed", String(pane === "source"));
   $("#mobileDocumentButton").setAttribute("aria-pressed", String(pane === "document"));
   renderPanelOrder();
+  if (pane === "document" && sourcePreviewPending) renderOutput();
 }
 function initializeWorkspaceV2() {
+  configureVirtualKeyboard();
   syncViewportHeight();
   let viewportFrame = 0;
   const queueViewportSync = () => {
     cancelAnimationFrame(viewportFrame);
-    viewportFrame = requestAnimationFrame(syncViewportHeight);
+    viewportFrame = requestAnimationFrame(() => {
+      syncViewportHeight();
+      requestAnimationFrame(revealMobileEditingCaret);
+    });
   };
   window.addEventListener("resize", queueViewportSync);
   window.visualViewport?.addEventListener("resize", queueViewportSync);
   window.visualViewport?.addEventListener("scroll", queueViewportSync);
+  window.navigator?.virtualKeyboard?.addEventListener("geometrychange", queueViewportSync);
   document.addEventListener("focusin", queueViewportSync);
   document.addEventListener("focusout", queueViewportSync);
+  window.addEventListener("orientationchange", () => {
+    mobileViewportBaseline = 0;
+    mobileKeyboardOpen = false;
+    queueViewportSync();
+  });
+  for (const editor of [
+    $("#jsonEditor"),
+    $("#xmlEditor"),
+    $("#latexEditor"),
+    $("#markdownInput"),
+  ]) {
+    editor.setAttribute("autocorrect", "off");
+    editor.setAttribute("autocapitalize", "off");
+    editor.setAttribute("autocomplete", "off");
+    editor.spellcheck = false;
+    editor.addEventListener("compositionend", () =>
+      editor.dispatchEvent(new Event("input", { bubbles: true })),
+    );
+    editor.addEventListener("blur", () =>
+      requestAnimationFrame(() => {
+        updateJsonEditor();
+        if (sourcePreviewPending) renderOutput();
+      }),
+    );
+  }
+  $("#documentView").onchange = (event) => {
+    saveWordDocument();
+    const record = workspace.resumes.find((item) => item.id === activeResumeId);
+    if (record?.sourceDocument) {
+      record.documentView = event.target.value;
+      if (event.target.value === "original") {
+        activeMode = record.sourceDocument.format === "docx" ? "word" : "pdf";
+        workspace.outputMode = activeMode;
+        $$(".mode-tab").forEach((tab) => {
+          tab.classList.toggle("active", tab.dataset.mode === activeMode);
+          tab.setAttribute("aria-selected", String(tab.dataset.mode === activeMode));
+        });
+      }
+      saveWorkspace();
+      renderOutput();
+    }
+  };
   syncZoomControl();
   // Word paragraphs can grow without replacing the page stack.
   $("#previewBody").addEventListener("input", () => requestAnimationFrame(fitPreview));
-  $("#xmlEditor").addEventListener("input", parseXmlLive);
+  $("#xmlEditor").addEventListener("input", (event) => {
+    if (!event.isComposing) parseXmlLive();
+  });
   $("#previewBody").addEventListener("beforeinput", (event) => {
     if (sourceDraftError()) {
       event.preventDefault();
@@ -664,8 +840,12 @@ function initializeWorkspaceV2() {
   const media = window.matchMedia("(max-width: 900px)");
   const reportButton = $("#reportBugButton");
   const reportHome = reportButton.parentElement;
+  const projectLinks = $(".desktop-project-links");
+  const projectHome = projectLinks.parentElement;
   const syncCompactHeader = () => {
     (media.matches ? $("#secondaryActions") : reportHome).appendChild(reportButton);
+    if (media.matches) $(".top-actions").prepend(projectLinks);
+    else projectHome.appendChild(projectLinks);
     closeMoreActions();
     compileGuide.open = false;
     $("#compileHint").style.removeProperty("left");
@@ -674,9 +854,11 @@ function initializeWorkspaceV2() {
   window.addEventListener("resize", closeMoreActions);
   syncCompactHeader();
   media.addEventListener("change", () => {
+    configureVirtualKeyboard();
     syncCompactHeader();
     syncWordToolbar();
     renderPanelOrder();
+    syncSourceWrap();
     syncFilesPanel();
   });
   attachPinchZoom($("#previewBody"), () => documentScale($("#previewPages")), setDocumentZoom);
